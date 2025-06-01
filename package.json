@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "bunx concurrently --kill-others-on-fail \"bun run dev:backend\" \"bun run dev:frontend\"",
+    "dev:frontend": "next dev --turbopack",
+    "dev:backend": "convex dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
