@@ -6,6 +6,7 @@ import Link from "next/link"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
+import { useAuthActions } from "@convex-dev/auth/react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -43,29 +44,25 @@ export function SignInForm({ className, ...props }: SignInFormProps) {
     },
   })
 
+  const { signIn } = useAuthActions()
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true)
 
     try {
-      // Sign in using the Convex auth endpoint
-      const response = await fetch("/api/auth/signin", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: values.email,
-          password: values.password,
-          provider: "password",
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error("Invalid email or password")
-      }
-
+      // Create FormData for Convex Auth
+      const formData = new FormData()
+      formData.append("email", values.email)
+      formData.append("password", values.password)
+      formData.append("flow", "signIn")
+      
+      // Sign in using Convex Auth
+      await signIn("password", formData)
+      
+      // If we get here, sign-in was successful
       router.push("/admin")
     } catch (error) {
+      // If we get here, sign-in failed
       console.error(error)
       toast.error("Invalid email or password")
     } finally {

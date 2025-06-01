@@ -6,6 +6,7 @@ import Link from "next/link"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
+import { useAuthActions } from "@convex-dev/auth/react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -50,27 +51,21 @@ export function SignUpForm({ className, ...props }: SignUpFormProps) {
     },
   })
 
+  const { signIn } = useAuthActions()
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true)
 
     try {
-      // Sign up using the Convex auth endpoint
-      const response = await fetch("/api/auth/signup", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: values.email,
-          password: values.password,
-          provider: "password",
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error("Failed to create account")
-      }
-
+      // Create FormData for Convex Auth
+      const formData = new FormData()
+      formData.append("email", values.email)
+      formData.append("password", values.password)
+      formData.append("flow", "signUp")
+      
+      // Sign up using Convex Auth
+      await signIn("password", formData)
+      
       toast.success("Account created! Please sign in.")
       router.push("/sign-in")
     } catch (error) {
