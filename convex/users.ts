@@ -1,5 +1,7 @@
-import { query } from "./_generated/server"
+import { query, mutation } from "./_generated/server"
 import { getAuthUserId } from "@convex-dev/auth/server"
+import { v } from "convex/values"
+import { Id } from "./_generated/dataModel"
 
 // Get the current authenticated user
 export const getMe = query({
@@ -57,6 +59,202 @@ export const getMe = query({
       imageUrl: userDoc?.image || user.pictureUrl || "",
       // Include the raw user document for debugging
       userDoc: userDoc
+    }
+  }
+})
+
+// Search users by email (admin only)
+export const searchUsersByEmail = query({
+  args: { 
+    email: v.string(),
+    tenantId: v.id("tenants")
+  },
+  handler: async (ctx, { email, tenantId }) => {
+    const userId = await getAuthUserId(ctx)
+    if (userId === null) {
+      throw new Error("User not authenticated")
+    }
+
+    // Check if user is admin in this tenant
+    const adminMembership = await ctx.db
+      .query("memberships")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .filter((q) => 
+        q.and(
+          q.eq(q.field("tenantId"), tenantId),
+          q.eq(q.field("role"), "admin"),
+          q.eq(q.field("deletedAt"), undefined)
+        )
+      )
+      .first()
+
+    if (!adminMembership) {
+      throw new Error("Unauthorized: Admin access required for this tenant")
+    }
+
+    // Search for users by email
+    const users = await ctx.db
+      .query("users")
+      .filter((q) => 
+        q.or(
+          q.contains(q.field("email"), email.toLowerCase()),
+          q.contains(q.field("name"), email) // Also search by name
+        )
+      )
+      .collect()
+
+    return users.map(user => ({
+      id: user._id,
+      name: user.name || "",
+      email: user.email || "",
+      imageUrl: user.image || ""
+    }))
+  }
+})
+
+// Get all members of a tenant with their roles (admin only)
+export const getTenantMembers = query({
+  args: { tenantId: v.id("tenants") },
+  handler: async (ctx, { tenantId }) => {
+    const userId = await getAuthUserId(ctx)
+    if (userId === null) {
+      throw new Error("User not authenticated")
+    }
+
+    // Check if user is admin in this tenant
+    const adminMembership = await ctx.db
+      .query("memberships")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .filter((q) => 
+        q.and(
+          q.eq(q.field("tenantId"), tenantId),
+          q.eq(q.field("role"), "admin"),
+          q.eq(q.field("deletedAt"), undefined)
+        )
+      )
+      .first()
+
+    if (!adminMembership) {
+      throw new Error("Unauthorized: Admin access required for this tenant")
+    }
+
+    // Get all memberships for this tenant
+    const memberships = await ctx.db
+      .query("memberships")
+      .withIndex("by_tenant", (q) => q.eq("tenantId", tenantId))
+      .filter((q) => q.eq(q.field("deletedAt"), undefined))
+      .collect()
+
+    // Group memberships by user
+    const membersByUser = new Map()
+    
+    for (const membership of memberships) {
+      const userDoc = await ctx.db.get(membership.userId)
+      if (!userDoc) continue
+
+      const userData = {
+        id: userDoc._id,
+        name: userDoc.name || "",
+        email: userDoc.email || "",
+        imageUrl: userDoc.image || "",
+        roles: []
+      }
+
+      if (membersByUser.has(userDoc._id.toString())) {
+        // Add role to existing user
+        membersByUser.get(userDoc._id.toString()).roles.push({
+          role: membership.role,
+          membershipId: membership._id
+        })
+      } else {
+        // Add new user with role
+        userData.roles = [{
+          role: membership.role,
+          membershipId: membership._id
+        }]
+        membersByUser.set(userDoc._id.toString(), userData)
+      }
+    }
+
+    return Array.from(membersByUser.values())
+  }
+})
+
+// Add user to tenant with role (admin only)
+export const addUserToTenant = mutation({
+  args: { 
+    email: v.string(), 
+    tenantId: v.id("tenants"), 
+    role: v.union(
+      v.literal("admin"),
+      v.literal("trainer"),
+      v.literal("rider"),
+      v.literal("parent")
+    )
+  },
+  handler: async (ctx, { email, tenantId, role }) => {
+    const userId = await getAuthUserId(ctx)
+    if (userId === null) {
+      throw new Error("User not authenticated")
+    }
+
+    // Check if user is admin in this tenant
+    const adminMembership = await ctx.db
+      .query("memberships")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .filter((q) => 
+        q.and(
+          q.eq(q.field("tenantId"), tenantId),
+          q.eq(q.field("role"), "admin"),
+          q.eq(q.field("deletedAt"), undefined)
+        )
+      )
+      .first()
+
+    if (!adminMembership) {
+      throw new Error("Unauthorized: Admin access required for this tenant")
+    }
+
+    // Find user by email
+    const userToAdd = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("email"), email.toLowerCase()))
+      .first()
+
+    if (!userToAdd) {
+      throw new Error(`User with email ${email} not found`)
+    }
+
+    // Check if user already has this role in the tenant
+    const existingMembership = await ctx.db
+      .query("memberships")
+      .filter((q) => 
+        q.and(
+          q.eq(q.field("tenantId"), tenantId),
+          q.eq(q.field("userId"), userToAdd._id),
+          q.eq(q.field("role"), role),
+          q.eq(q.field("deletedAt"), undefined)
+        )
+      )
+      .first()
+
+    if (existingMembership) {
+      return { 
+        success: false, 
+        message: `User already has the ${role} role in this tenant` 
+      }
+    }
+
+    // Add user to tenant with the specified role
+    await ctx.db.insert("memberships", {
+      tenantId,
+      userId: userToAdd._id,
+      role
+    })
+
+    return { 
+      success: true, 
+      message: `User ${email} added as ${role} to the tenant` 
     }
   }
 })

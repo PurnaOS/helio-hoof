@@ -127,7 +127,7 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton
               asChild
-              isActive={pathname.startsWith("/admin") && pathname !== "/admin/tenants"}
+              isActive={pathname.startsWith("/admin") && pathname !== "/admin/tenants" && pathname !== "/admin/users"}
               tooltip="Admin"
             >
               <Link href="/admin" className="flex items-center gap-2">
@@ -145,6 +145,18 @@ export function AppSidebar() {
               <Link href="/admin/tenants" className="flex items-center gap-2">
                 <Building2 className="h-4 w-4 shrink-0" />
                 <span>Tenant Management</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              asChild
+              isActive={pathname === "/admin/users"}
+              tooltip="User Management"
+            >
+              <Link href="/admin/users" className="flex items-center gap-2">
+                <Users className="h-4 w-4 shrink-0" />
+                <span>User Management</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
