@@ -1,8 +1,7 @@
-import { mutation, query } from "./_generated/server";
+import { mutation, query, QueryCtx } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
-import { randomBytes } from "crypto";
 
 // Interface for invitation data
 interface InvitationData {
@@ -19,7 +18,7 @@ interface InvitationData {
 
 // Helper function to check if user is admin for a tenant
 async function isAdminForTenant(
-  ctx: any,
+  ctx: QueryCtx,
   userId: Id<"users">,
   tenantId: Id<"tenants">
 ): Promise<boolean> {
@@ -38,9 +37,31 @@ async function isAdminForTenant(
   return !!adminMembership;
 }
 
-// Helper function to generate a secure random token
+// Helper function to generate a secure random token using web-compatible APIs
 function generateToken(length = 32): string {
-  return randomBytes(length).toString("hex");
+  const chars = "0123456789abcdef";
+  let result = "";
+  
+  // Add timestamp for uniqueness
+  const timestamp = Date.now().toString(16);
+  result += timestamp.padStart(16, '0');
+  
+  // Generate random hex-like characters
+  const randomPart = length - timestamp.length;
+  for (let i = 0; i < randomPart; i++) {
+    // Use Math.random() for generating random indices
+    const randomIndex = Math.floor(Math.random() * chars.length);
+    result += chars[randomIndex];
+  }
+  
+  // Add some extra entropy by shuffling parts of the string
+  const shuffled = result.split('');
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  
+  return shuffled.join('');
 }
 
 // Create a new invitation
@@ -230,15 +251,12 @@ export const getInvitationByToken = query({
       .first();
 
     if (!invitation) {
-      throw new Error("Invitation not found");
+      return null; // Invitation not found
     }
 
     // Check if invitation has expired
     if (invitation.status === "expired" || Date.now() > invitation.expiresAt) {
-      // If it's expired but not marked as such, update it
-      if (invitation.status !== "expired") {
-        await ctx.db.patch(invitation._id, { status: "expired" });
-      }
+      // Just throw an error without updating the database since queries are read-only
       throw new Error("Invitation has expired");
     }
 

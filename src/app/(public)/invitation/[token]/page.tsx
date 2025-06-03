@@ -4,7 +4,8 @@ import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { useQuery, useMutation, useConvexAuth } from "convex/react"
 import { api } from "../../../../../convex/_generated/api"
-import { SignInButton, SignUpButton } from "@convex-dev/auth/react"
+import { SignInButton } from "@convex-dev/auth/react"
+import { InvitationSignupForm } from "@/components/invitation-signup-form"
 
 import {
   Card,
@@ -24,8 +25,7 @@ import {
   Clock, 
   AlertCircle, 
   ArrowRight, 
-  LogIn,
-  UserPlus
+  LogIn
 } from "lucide-react"
 import { format } from "date-fns"
 import { toast } from "sonner"
@@ -35,6 +35,7 @@ export default function InvitationPage() {
   const router = useRouter()
   const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth()
   const [processingInvitation, setProcessingInvitation] = useState(false)
+  const [showSignupForm, setShowSignupForm] = useState(false)
   
   // Get token from URL params
   const token = params.token as string
@@ -48,7 +49,6 @@ export default function InvitationPage() {
   const currentUser = useQuery(api.users.getMe)
   
   // Mutations
-  const acceptInvitation = useMutation(api.invitations.acceptInvitation)
   const processInvitation = useMutation(api.invitations.processInvitationAfterSignup)
   
   // Process invitation automatically if user is already logged in
@@ -89,13 +89,8 @@ export default function InvitationPage() {
   }, [isAuthenticated, currentUser, invitation, token, processInvitation, router, processingInvitation])
   
   // Handle auth callbacks
-  const handleSignUpSuccess = async () => {
-    // The user will be redirected to the dashboard by the auth system
-    // The invitation processing will happen in the useEffect above when they're authenticated
-  }
-  
   const handleSignInSuccess = async () => {
-    // Same as sign up - the useEffect will handle processing
+    // The useEffect will handle processing when they're authenticated
   }
   
   // Loading state
@@ -169,6 +164,15 @@ export default function InvitationPage() {
     case "parent":
       badgeVariant = "outline"
       break
+  }
+  
+  // If user is not authenticated and we're showing the signup form
+  if (!isAuthenticated && showSignupForm) {
+    return (
+      <div className="container max-w-md py-12">
+        <InvitationSignupForm invitation={invitation} />
+      </div>
+    )
   }
   
   return (
@@ -273,15 +277,12 @@ export default function InvitationPage() {
             )
           ) : (
             <>
-              <SignUpButton
-                onSuccess={handleSignUpSuccess}
-                className="w-full"
+              <Button 
+                className="w-full" 
+                onClick={() => setShowSignupForm(true)}
               >
-                <Button className="w-full">
-                  <UserPlus className="mr-2 h-4 w-4" />
-                  Sign up to accept
-                </Button>
-              </SignUpButton>
+                Create Account & Accept Invitation
+              </Button>
               
               <div className="text-center text-sm text-muted-foreground">
                 Already have an account?
