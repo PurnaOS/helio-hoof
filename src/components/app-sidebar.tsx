@@ -10,7 +10,8 @@ import {
   Settings, 
   Building2, 
   ChevronDown,
-  LogOut
+  LogOut,
+  Shield
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -120,6 +121,30 @@ export function AppSidebar() {
               <Link href="/settings" className="flex items-center gap-2">
                 <Settings className="h-4 w-4 shrink-0" />
                 <span>Settings</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              asChild
+              isActive={pathname.startsWith("/admin") && pathname !== "/admin/tenants"}
+              tooltip="Admin"
+            >
+              <Link href="/admin" className="flex items-center gap-2">
+                <Shield className="h-4 w-4 shrink-0" />
+                <span>Admin</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              asChild
+              isActive={pathname === "/admin/tenants"}
+              tooltip="Tenant Management"
+            >
+              <Link href="/admin/tenants" className="flex items-center gap-2">
+                <Building2 className="h-4 w-4 shrink-0" />
+                <span>Tenant Management</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

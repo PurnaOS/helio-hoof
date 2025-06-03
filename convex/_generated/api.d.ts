@@ -16,6 +16,8 @@ import type {
 import type * as auth from "../auth.js";
 import type * as http from "../http.js";
 import type * as tenantrole from "../tenantrole.js";
+import type * as tenants from "../tenants.js";
+import type * as tenants_updated from "../tenants_updated.js";
 import type * as users from "../users.js";
 
 /**
@@ -30,6 +32,8 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   http: typeof http;
   tenantrole: typeof tenantrole;
+  tenants: typeof tenants;
+  tenants_updated: typeof tenants_updated;
   users: typeof users;
 }>;
 export declare const api: FilterApi<
