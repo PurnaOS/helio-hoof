@@ -15,7 +15,7 @@ import type {
 } from "convex/server";
 import type * as auth from "../auth.js";
 import type * as http from "../http.js";
-import type * as tenant_role from "../tenant-role.js";
+import type * as tenantrole from "../tenantrole.js";
 
 /**
  * A utility for referencing Convex functions in your app's API.
@@ -28,7 +28,7 @@ import type * as tenant_role from "../tenant-role.js";
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   http: typeof http;
-  "tenant-role": typeof tenant_role;
+  tenantrole: typeof tenantrole;
 }>;
 export declare const api: FilterApi<
   typeof fullApi,
