@@ -60,7 +60,7 @@ export function SignInForm({ className, ...props }: SignInFormProps) {
       await signIn("password", formData)
       
       // If we get here, sign-in was successful
-      router.push("/admin")
+      router.push("/")
     } catch (error: any) {
       // If we get here, sign-in failed
       console.log(error)
