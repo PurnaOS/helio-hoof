@@ -52,7 +52,7 @@ export function SignInForm({ className, ...props }: SignInFormProps) {
     try {
       // Create FormData for Convex Auth
       const formData = new FormData()
-      formData.append("email", values.email)
+      formData.append("email", values.email) 
       formData.append("password", values.password)
       formData.append("flow", "signIn")
       
@@ -61,10 +61,43 @@ export function SignInForm({ className, ...props }: SignInFormProps) {
       
       // If we get here, sign-in was successful
       router.push("/admin")
-    } catch (error) {
+    } catch (error: any) {
       // If we get here, sign-in failed
-      console.error(error)
-      toast.error("Invalid email or password")
+      console.log(error)
+      
+      // Handle different error scenarios with specific messages
+      if (error.message?.includes("user not found") || error.message?.includes("no user with email")) {
+        form.setError("email", { 
+          type: "manual",
+          message: "No account found with this email address"
+        })
+      } else if (error.message?.includes("incorrect password") || error.message?.includes("invalid credentials") || error.message?.includes("InvalidSecret")) {
+        form.setError("password", { 
+          type: "manual",
+          message: "Incorrect password"
+        })
+      } else if (error.message?.includes("InvalidAccountId")) {
+        form.setError("email", { 
+          type: "manual",
+          message: "Invalid email address"
+        })
+      } else if (error.message?.includes("too many attempts") || error.message?.includes("rate limit")) {
+        form.setError("root", { 
+          type: "manual",
+          message: "Too many failed attempts. Please try again later"
+        })
+      } else if (error.message?.includes("network") || error.message?.includes("connection")) {
+        form.setError("root", { 
+          type: "manual",
+          message: "Network error. Please check your connection and try again"
+        })
+      } else {
+        // Fallback error message
+        form.setError("root", { 
+          type: "manual",
+          message: "Authentication failed. Please check your credentials and try again"
+        })
+      }
     } finally {
       setIsLoading(false)
     }
@@ -74,6 +107,11 @@ export function SignInForm({ className, ...props }: SignInFormProps) {
     <div className={cn("grid gap-6", className)} {...props}>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          {form.formState.errors.root && (
+            <div className="p-3 rounded-md bg-destructive/15 text-destructive text-sm">
+              {form.formState.errors.root.message}
+            </div>
+          )}
           <FormField
             control={form.control}
             name="email"
