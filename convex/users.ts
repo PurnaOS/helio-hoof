@@ -29,40 +29,10 @@ export const getMe = query({
       console.error('Error fetching user document:', error)
     }
     
-    // Extract user ID parts from the tokenIdentifier
-    // Format appears to be: "https://domain|userId1|userId2"
-    const tokenIdentifier = user.tokenIdentifier || ''
-    const parts = tokenIdentifier.split('|')
-    
-    // Generate a username from the user ID parts
-    let username = ""
-    if (parts.length > 1) {
-      // Take the second part of the tokenIdentifier as a basis for the username
-      // This is just a heuristic and might need adjustment
-      username = parts[1].substring(0, 8)
-    }
-    
-    // Get any memberships for this user to find their role
-    const memberships = await ctx.db
-      .query("memberships")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .filter((q) => q.eq(q.field("deletedAt"), undefined))
-      .collect()
-    
-    // Get the first tenant for this user
-    let tenantName = ""
-    if (memberships.length > 0) {
-      const tenant = await ctx.db.get(memberships[0].tenantId)
-      if (tenant) {
-        tenantName = tenant.name
-      }
-    }
     
     // Check if we have email in the user document
-    let email = ""
-    if (userDoc && userDoc.email) {
-      email = userDoc.email
-    }
+    let email =userDoc?.email || "";
+  
     
     // Check if we have a name in the user document
     let name = ""
@@ -81,14 +51,10 @@ export const getMe = query({
     return {
       id: userId,
       // Use name from user document, or generate from email, or use tenant info
-      name: name || user.name || user.givenName || 
-        (tenantName ? `${tenantName} User` : `User ${username}`),
+      name: name ,
       // Use email from user document if available
-      email: email || user.email || "",
+      email: email ,
       imageUrl: userDoc?.image || user.pictureUrl || "",
-      // Include the tenant name for additional context
-      tenantName: tenantName,
-      role: memberships.length > 0 ? memberships[0].role : "",
       // Include the raw user document for debugging
       userDoc: userDoc
     }
