@@ -1,14 +1,23 @@
 "use client"
 
 import * as React from "react"
-import { useState, useEffect, useCallback } from "react"
+import { useState, useCallback } from "react"
 import { useMutation, useQuery } from "convex/react"
 import { api } from "../../convex/_generated/api"
 import { useTenant } from "./TenantContextProvider"
 import { Id } from "../../convex/_generated/dataModel"
-import { Search, UserPlus, Loader2, AlertCircle } from "lucide-react"
+import { 
+  UserPlus, 
+  Loader2, 
+  AlertCircle, 
+  Send, 
+  Copy, 
+  Clock, 
+  CheckCircle, 
+  Mail, 
+  Users 
+} from "lucide-react"
 import { toast } from "sonner"
-import debounce from "lodash.debounce"
 
 import {
   Table,
@@ -48,6 +57,8 @@ import {
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { format } from "date-fns"
 
 // Types
 interface User {
@@ -66,7 +77,19 @@ interface Member extends User {
   roles: UserRole[]
 }
 
-// Form schema
+interface Invitation {
+  id: Id<"invitations">
+  email: string
+  role: "admin" | "trainer" | "rider" | "parent"
+  status: "pending" | "accepted" | "expired"
+  tenantName: string
+  createdAt: number
+  expiresAt: number
+  token: string
+  invitationUrl: string
+}
+
+// Form schemas
 const addUserFormSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
   role: z.enum(["admin", "trainer", "rider", "parent"], {
@@ -74,16 +97,22 @@ const addUserFormSchema = z.object({
   }),
 })
 
+const inviteUserFormSchema = z.object({
+  email: z.string().email({ message: "Please enter a valid email address" }),
+  role: z.enum(["admin", "trainer", "rider", "parent"], {
+    required_error: "Please select a role",
+  }),
+})
+
 type AddUserFormValues = z.infer<typeof addUserFormSchema>
+type InviteUserFormValues = z.infer<typeof inviteUserFormSchema>
 
 export function UserManagement() {
   const { activeTenant } = useTenant()
-  const [searchQuery, setSearchQuery] = useState("")
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("")
-  const [isSearching, setIsSearching] = useState(false)
+  const [activeTab, setActiveTab] = useState<string>("add")
 
-  // Form
-  const form = useForm<AddUserFormValues>({
+  // Forms
+  const addUserForm = useForm<AddUserFormValues>({
     resolver: zodResolver(addUserFormSchema),
     defaultValues: {
       email: "",
@@ -91,72 +120,30 @@ export function UserManagement() {
     },
   })
 
-  // Queries and mutations
-  const searchResults = useQuery(
-    api.users.searchUsersByEmail,
-    activeTenant
-      ? {
-          email: debouncedSearchQuery,
-          tenantId: activeTenant.teanantID,
-        }
-      : "skip"
-  )
+  const inviteUserForm = useForm<InviteUserFormValues>({
+    resolver: zodResolver(inviteUserFormSchema),
+    defaultValues: {
+      email: "",
+      role: "rider",
+    },
+  })
 
+  // Queries and mutations
   const tenantMembers = useQuery(
     api.users.getTenantMembers,
     activeTenant ? { tenantId: activeTenant.teanantID } : "skip"
   )
 
-  const addUserToTenant = useMutation(api.users.addUserToTenant)
-
-  // Debounced search
-  const debouncedSearch = useCallback(
-    debounce((query: string) => {
-      setDebouncedSearchQuery(query)
-      setIsSearching(false)
-    }, 500),
-    []
+  const pendingInvitations = useQuery(
+    api.invitations.getInvitationsByTenant,
+    activeTenant ? { tenantId: activeTenant.teanantID } : "skip"
   )
 
-  // Update search query
-  useEffect(() => {
-    if (searchQuery) {
-      setIsSearching(true)
-      debouncedSearch(searchQuery)
-    } else {
-      setDebouncedSearchQuery("")
-      setIsSearching(false)
-    }
-
-    return () => {
-      debouncedSearch.cancel()
-    }
-  }, [searchQuery, debouncedSearch])
-
-  // Handle add user from search results
-  const handleAddUserFromSearch = async (user: User, role: "admin" | "trainer" | "rider" | "parent") => {
-    if (!activeTenant) return
-
-    try {
-      const result = await addUserToTenant({
-        email: user.email,
-        tenantId: activeTenant.teanantID,
-        role,
-      })
-
-      if (result.success) {
-        toast.success(result.message)
-        setSearchQuery("")
-      } else {
-        toast.error(result.message)
-      }
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to add user")
-    }
-  }
+  const addUserToTenant = useMutation(api.users.addUserToTenant)
+  const createInvitation = useMutation(api.invitations.createInvitation)
 
   // Handle add user from form
-  const onSubmit = async (values: AddUserFormValues) => {
+  const onAddUserSubmit = async (values: AddUserFormValues) => {
     if (!activeTenant) return
 
     try {
@@ -168,7 +155,7 @@ export function UserManagement() {
 
       if (result.success) {
         toast.success(result.message)
-        form.reset()
+        addUserForm.reset()
       } else {
         toast.error(result.message)
       }
@@ -176,10 +163,54 @@ export function UserManagement() {
       toast.error(error instanceof Error ? error.message : "Failed to add user")
       // If the error is that the user doesn't exist, we could show a special message here
       if (error instanceof Error && error.message.includes("not found")) {
-        toast.error("User not found. Please ensure the email is correct.")
+        toast.error("User not found. Please ensure the email is correct or invite them instead.")
+        setActiveTab("invite")
+        inviteUserForm.setValue("email", values.email)
+        inviteUserForm.setValue("role", values.role)
       }
     }
   }
+
+  // Handle invite user from form
+  const onInviteUserSubmit = async (values: InviteUserFormValues) => {
+    if (!activeTenant) return
+
+    try {
+      const result = await createInvitation({
+        email: values.email,
+        tenantId: activeTenant.teanantID,
+        role: values.role,
+      })
+
+      if (result.success) {
+        toast.success(result.message)
+        inviteUserForm.reset()
+        
+        // If it's an existing user that was added directly
+        if (result.existingUser) {
+          toast.success(`${values.email} already had an account and was added directly to the tenant.`)
+        }
+      } else {
+        toast.error(result.message)
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to send invitation")
+    }
+  }
+
+  // Copy invitation link to clipboard
+  const copyInvitationLink = useCallback((url: string) => {
+    const baseUrl = window.location.origin
+    const fullUrl = `${baseUrl}${url}`
+    
+    navigator.clipboard.writeText(fullUrl)
+      .then(() => {
+        toast.success("Invitation link copied to clipboard")
+      })
+      .catch(() => {
+        toast.error("Failed to copy invitation link")
+      })
+  }, [])
 
   // If no active tenant, show message
   if (!activeTenant) {
@@ -203,164 +234,172 @@ export function UserManagement() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Search Users */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Search Users</CardTitle>
-            <CardDescription>
-              Find users by email or name to add to this tenant
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center space-x-2">
-                <Search className="h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search by email or name..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="flex-1"
-                />
-              </div>
-
-              {isSearching && (
-                <div className="flex items-center justify-center py-4">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                </div>
-              )}
-
-              {!isSearching && debouncedSearchQuery && searchResults && searchResults.length > 0 && (
-                <div className="space-y-2">
-                  <h4 className="text-sm font-medium">Search Results</h4>
-                  <div className="border rounded-md divide-y">
-                    {searchResults.map((user) => (
-                      <div
-                        key={user.id.toString()}
-                        className="p-3 flex items-center justify-between"
-                      >
-                        <div>
-                          <div className="font-medium">{user.name}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {user.email}
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Select
-                            defaultValue="rider"
-                            onValueChange={(value) => {
-                              handleAddUserFromSearch(
-                                user,
-                                value as "admin" | "trainer" | "rider" | "parent"
-                              )
-                            }}
-                          >
-                            <SelectTrigger className="w-[110px]">
-                              <SelectValue placeholder="Select role" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="admin">Admin</SelectItem>
-                              <SelectItem value="trainer">Trainer</SelectItem>
-                              <SelectItem value="rider">Rider</SelectItem>
-                              <SelectItem value="parent">Parent</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {!isSearching && debouncedSearchQuery && searchResults && searchResults.length === 0 && (
-                <Alert>
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>No results found</AlertTitle>
-                  <AlertDescription>
-                    No users found matching "{debouncedSearchQuery}"
-                  </AlertDescription>
-                </Alert>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Add User Form */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Add User</CardTitle>
-            <CardDescription>
-              Add a user to this tenant by email
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input placeholder="user@example.com" {...field} />
-                      </FormControl>
-                      <FormDescription>
-                        Enter the email of an existing user
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="role"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Role</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="add" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Add Existing User
+          </TabsTrigger>
+          <TabsTrigger value="invite" className="flex items-center gap-2">
+            <Mail className="h-4 w-4" />
+            Invite New User
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="add" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Add Existing User</CardTitle>
+              <CardDescription>
+                Add a user who already has an account to this tenant
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Form {...addUserForm}>
+                <form onSubmit={addUserForm.handleSubmit(onAddUserSubmit)} className="space-y-4">
+                  <FormField
+                    control={addUserForm.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
                         <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a role" />
-                          </SelectTrigger>
+                          <Input placeholder="user@example.com" {...field} />
                         </FormControl>
-                        <SelectContent>
-                          <SelectItem value="admin">Admin</SelectItem>
-                          <SelectItem value="trainer">Trainer</SelectItem>
-                          <SelectItem value="rider">Rider</SelectItem>
-                          <SelectItem value="parent">Parent</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormDescription>
-                        Select the user's role in this tenant
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                        <FormDescription>
+                          Enter the email of an existing user
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                <Button type="submit" className="w-full">
-                  {form.formState.isSubmitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Adding...
-                    </>
-                  ) : (
-                    <>
-                      <UserPlus className="mr-2 h-4 w-4" />
-                      Add User
-                    </>
-                  )}
-                </Button>
-              </form>
-            </Form>
-          </CardContent>
-        </Card>
-      </div>
+                  <FormField
+                    control={addUserForm.control}
+                    name="role"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Role</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a role" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="admin">Admin</SelectItem>
+                            <SelectItem value="trainer">Trainer</SelectItem>
+                            <SelectItem value="rider">Rider</SelectItem>
+                            <SelectItem value="parent">Parent</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          Select the user's role in this tenant
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <Button type="submit" className="w-full">
+                    {addUserForm.formState.isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Adding...
+                      </>
+                    ) : (
+                      <>
+                        <UserPlus className="mr-2 h-4 w-4" />
+                        Add User
+                      </>
+                    )}
+                  </Button>
+                </form>
+              </Form>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="invite" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Invite New User</CardTitle>
+              <CardDescription>
+                Send an invitation to a new user to join the platform
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Form {...inviteUserForm}>
+                <form onSubmit={inviteUserForm.handleSubmit(onInviteUserSubmit)} className="space-y-4">
+                  <FormField
+                    control={inviteUserForm.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input placeholder="newuser@example.com" {...field} />
+                        </FormControl>
+                        <FormDescription>
+                          Enter the email of the person you want to invite
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={inviteUserForm.control}
+                    name="role"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Role</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a role" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="admin">Admin</SelectItem>
+                            <SelectItem value="trainer">Trainer</SelectItem>
+                            <SelectItem value="rider">Rider</SelectItem>
+                            <SelectItem value="parent">Parent</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          Select the role they will have in this tenant
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <Button type="submit" className="w-full">
+                    {inviteUserForm.formState.isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Sending...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="mr-2 h-4 w-4" />
+                        Send Invitation
+                      </>
+                    )}
+                  </Button>
+                </form>
+              </Form>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Current Members Table */}
       <Card>
@@ -432,6 +471,80 @@ export function UserManagement() {
                           )
                         })}
                       </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Pending Invitations Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Pending Invitations</CardTitle>
+          <CardDescription>
+            Invitations that have been sent but not yet accepted
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {pendingInvitations === undefined ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : pendingInvitations.length === 0 ? (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>No pending invitations</AlertTitle>
+              <AlertDescription>
+                There are no pending invitations for this tenant.
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Expires</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {pendingInvitations.map((invitation) => (
+                  <TableRow key={invitation.id.toString()}>
+                    <TableCell>{invitation.email}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          invitation.role === "admin"
+                            ? "destructive"
+                            : invitation.role === "trainer"
+                            ? "secondary"
+                            : invitation.role === "rider"
+                            ? "default"
+                            : "outline"
+                        }
+                      >
+                        {invitation.role}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center">
+                        <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
+                        {format(new Date(invitation.expiresAt), "MMM d, yyyy")}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => copyInvitationLink(invitation.invitationUrl)}
+                      >
+                        <Copy className="mr-2 h-4 w-4" />
+                        Copy Link
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}

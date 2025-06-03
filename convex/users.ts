@@ -3,6 +3,23 @@ import { getAuthUserId } from "@convex-dev/auth/server"
 import { v } from "convex/values"
 import { Id } from "./_generated/dataModel"
 
+// Define types for user data
+interface User {
+  id: Id<"users">
+  name: string
+  email: string
+  imageUrl: string
+}
+
+interface UserRole {
+  role: "admin" | "trainer" | "rider" | "parent"
+  membershipId: Id<"memberships">
+}
+
+interface Member extends User {
+  roles: UserRole[]
+}
+
 // Get the current authenticated user
 export const getMe = query({
   handler: async (ctx) => {
@@ -63,55 +80,6 @@ export const getMe = query({
   }
 })
 
-// Search users by email (admin only)
-export const searchUsersByEmail = query({
-  args: { 
-    email: v.string(),
-    tenantId: v.id("tenants")
-  },
-  handler: async (ctx, { email, tenantId }) => {
-    const userId = await getAuthUserId(ctx)
-    if (userId === null) {
-      throw new Error("User not authenticated")
-    }
-
-    // Check if user is admin in this tenant
-    const adminMembership = await ctx.db
-      .query("memberships")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .filter((q) => 
-        q.and(
-          q.eq(q.field("tenantId"), tenantId),
-          q.eq(q.field("role"), "admin"),
-          q.eq(q.field("deletedAt"), undefined)
-        )
-      )
-      .first()
-
-    if (!adminMembership) {
-      throw new Error("Unauthorized: Admin access required for this tenant")
-    }
-
-    // Search for users by email
-    const users = await ctx.db
-      .query("users")
-      .filter((q) => 
-        q.or(
-          q.contains(q.field("email"), email.toLowerCase()),
-          q.contains(q.field("name"), email) // Also search by name
-        )
-      )
-      .collect()
-
-    return users.map(user => ({
-      id: user._id,
-      name: user.name || "",
-      email: user.email || "",
-      imageUrl: user.image || ""
-    }))
-  }
-})
-
 // Get all members of a tenant with their roles (admin only)
 export const getTenantMembers = query({
   args: { tenantId: v.id("tenants") },
@@ -146,32 +114,30 @@ export const getTenantMembers = query({
       .collect()
 
     // Group memberships by user
-    const membersByUser = new Map()
+    const membersByUser = new Map<string, Member>()
     
     for (const membership of memberships) {
       const userDoc = await ctx.db.get(membership.userId)
       if (!userDoc) continue
 
-      const userData = {
-        id: userDoc._id,
-        name: userDoc.name || "",
-        email: userDoc.email || "",
-        imageUrl: userDoc.image || "",
-        roles: []
+      const userRole: UserRole = {
+        role: membership.role,
+        membershipId: membership._id
       }
 
       if (membersByUser.has(userDoc._id.toString())) {
         // Add role to existing user
-        membersByUser.get(userDoc._id.toString()).roles.push({
-          role: membership.role,
-          membershipId: membership._id
-        })
+        const existingUser = membersByUser.get(userDoc._id.toString())!
+        existingUser.roles.push(userRole)
       } else {
         // Add new user with role
-        userData.roles = [{
-          role: membership.role,
-          membershipId: membership._id
-        }]
+        const userData: Member = {
+          id: userDoc._id,
+          name: userDoc.name || "",
+          email: userDoc.email || "",
+          imageUrl: userDoc.image || "",
+          roles: [userRole]
+        }
         membersByUser.set(userDoc._id.toString(), userData)
       }
     }
