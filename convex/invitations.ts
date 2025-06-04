@@ -254,24 +254,32 @@ export const getInvitationByToken = query({
       return null; // Invitation not found
     }
 
-    // Check if invitation has expired
-    if (invitation.status === "expired" || Date.now() > invitation.expiresAt) {
-      // Just throw an error without updating the database since queries are read-only
-      throw new Error("Invitation has expired");
-    }
-
-    // Check if invitation has already been accepted
-    if (invitation.status === "accepted") {
-      throw new Error("Invitation has already been accepted");
-    }
-
     // Get tenant details
     const tenant = await ctx.db.get(invitation.tenantId);
     if (!tenant || tenant.deletedAt) {
-      throw new Error("Tenant not found or has been deleted");
+      return {
+        status: "error",
+        message: "Tenant not found or has been deleted",
+        invitationStatus: invitation.status
+      };
     }
 
-    // Return invitation details
+    // Check invitation status and return appropriate data
+    let status = "valid";
+    let message = "";
+
+    // Check if invitation has expired
+    if (invitation.status === "expired" || Date.now() > invitation.expiresAt) {
+      status = "expired";
+      message = "This invitation has expired";
+    } 
+    // Check if invitation has already been accepted
+    else if (invitation.status === "accepted") {
+      status = "accepted";
+      message = "This invitation has already been accepted";
+    }
+
+    // Return invitation details with status
     return {
       email: invitation.email,
       role: invitation.role,
@@ -279,6 +287,9 @@ export const getInvitationByToken = query({
       tenantName: tenant.name,
       expiresAt: invitation.expiresAt,
       token: invitation.token,
+      status: status,
+      message: message,
+      invitationStatus: invitation.status
     };
   },
 });

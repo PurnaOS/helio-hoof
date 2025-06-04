@@ -80,11 +80,11 @@ export function InvitationSignupForm({ invitation }: InvitationSignupFormProps) 
         return
       }
       
-      // Sign up with Convex Auth using password provider
+      // Sign up with Convex Auth using password provider with proper flow parameter
       const result = await signIn("password", {
         email: values.email,
         password: values.password,
-        createIfMissing: true,
+        flow: "signUp" // Specify that this is a signup flow
       })
       
       if (!result.success) {

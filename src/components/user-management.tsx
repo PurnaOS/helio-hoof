@@ -14,8 +14,7 @@ import {
   Copy, 
   Clock, 
   CheckCircle, 
-  Mail, 
-  Users 
+  Mail
 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -57,7 +56,6 @@ import {
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { format } from "date-fns"
 
 // Types
@@ -89,39 +87,22 @@ interface Invitation {
   invitationUrl: string
 }
 
-// Form schemas
-const addUserFormSchema = z.object({
+// Form schema
+const userFormSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
   role: z.enum(["admin", "trainer", "rider", "parent"], {
     required_error: "Please select a role",
   }),
 })
 
-const inviteUserFormSchema = z.object({
-  email: z.string().email({ message: "Please enter a valid email address" }),
-  role: z.enum(["admin", "trainer", "rider", "parent"], {
-    required_error: "Please select a role",
-  }),
-})
-
-type AddUserFormValues = z.infer<typeof addUserFormSchema>
-type InviteUserFormValues = z.infer<typeof inviteUserFormSchema>
+type UserFormValues = z.infer<typeof userFormSchema>
 
 export function UserManagement() {
   const { activeTenant } = useTenant()
-  const [activeTab, setActiveTab] = useState<string>("add")
 
-  // Forms
-  const addUserForm = useForm<AddUserFormValues>({
-    resolver: zodResolver(addUserFormSchema),
-    defaultValues: {
-      email: "",
-      role: "rider",
-    },
-  })
-
-  const inviteUserForm = useForm<InviteUserFormValues>({
-    resolver: zodResolver(inviteUserFormSchema),
+  // Single form for both adding existing users and inviting new users
+  const form = useForm<UserFormValues>({
+    resolver: zodResolver(userFormSchema),
     defaultValues: {
       email: "",
       role: "rider",
@@ -139,40 +120,11 @@ export function UserManagement() {
     activeTenant ? { tenantId: activeTenant.teanantID } : "skip"
   )
 
-  const addUserToTenant = useMutation(api.users.addUserToTenant)
+  // Only use createInvitation which handles both existing and new users
   const createInvitation = useMutation(api.invitations.createInvitation)
 
-  // Handle add user from form
-  const onAddUserSubmit = async (values: AddUserFormValues) => {
-    if (!activeTenant) return
-
-    try {
-      const result = await addUserToTenant({
-        email: values.email,
-        tenantId: activeTenant.teanantID,
-        role: values.role,
-      })
-
-      if (result.success) {
-        toast.success(result.message)
-        addUserForm.reset()
-      } else {
-        toast.error(result.message)
-      }
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to add user")
-      // If the error is that the user doesn't exist, we could show a special message here
-      if (error instanceof Error && error.message.includes("not found")) {
-        toast.error("User not found. Please ensure the email is correct or invite them instead.")
-        setActiveTab("invite")
-        inviteUserForm.setValue("email", values.email)
-        inviteUserForm.setValue("role", values.role)
-      }
-    }
-  }
-
-  // Handle invite user from form
-  const onInviteUserSubmit = async (values: InviteUserFormValues) => {
+  // Handle form submission - works for both existing and new users
+  const onSubmit = async (values: UserFormValues) => {
     if (!activeTenant) return
 
     try {
@@ -183,8 +135,9 @@ export function UserManagement() {
       })
 
       if (result.success) {
+        // Show appropriate success message
         toast.success(result.message)
-        inviteUserForm.reset()
+        form.reset()
         
         // If it's an existing user that was added directly
         if (result.existingUser) {
@@ -194,7 +147,7 @@ export function UserManagement() {
         toast.error(result.message)
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to send invitation")
+      toast.error(error instanceof Error ? error.message : "Failed to add user")
     }
   }
 
@@ -234,172 +187,82 @@ export function UserManagement() {
         </p>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="add" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            Add Existing User
-          </TabsTrigger>
-          <TabsTrigger value="invite" className="flex items-center gap-2">
-            <Mail className="h-4 w-4" />
-            Invite New User
-          </TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="add" className="mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Add Existing User</CardTitle>
-              <CardDescription>
-                Add a user who already has an account to this tenant
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Form {...addUserForm}>
-                <form onSubmit={addUserForm.handleSubmit(onAddUserSubmit)} className="space-y-4">
-                  <FormField
-                    control={addUserForm.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input placeholder="user@example.com" {...field} />
-                        </FormControl>
-                        <FormDescription>
-                          Enter the email of an existing user
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+      {/* Single form for both adding existing users and inviting new ones */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Add User</CardTitle>
+          <CardDescription>
+            Add a user to this tenant by email. If they already have an account, they'll be added immediately. 
+            If not, they'll receive an invitation to join.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input placeholder="user@example.com" {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      Enter the email of the user you want to add
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-                  <FormField
-                    control={addUserForm.control}
-                    name="role"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Role</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select a role" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="admin">Admin</SelectItem>
-                            <SelectItem value="trainer">Trainer</SelectItem>
-                            <SelectItem value="rider">Rider</SelectItem>
-                            <SelectItem value="parent">Parent</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormDescription>
-                          Select the user's role in this tenant
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+              <FormField
+                control={form.control}
+                name="role"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Role</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a role" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="admin">Admin</SelectItem>
+                        <SelectItem value="trainer">Trainer</SelectItem>
+                        <SelectItem value="rider">Rider</SelectItem>
+                        <SelectItem value="parent">Parent</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      Select the role they will have in this tenant
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-                  <Button type="submit" className="w-full">
-                    {addUserForm.formState.isSubmitting ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Adding...
-                      </>
-                    ) : (
-                      <>
-                        <UserPlus className="mr-2 h-4 w-4" />
-                        Add User
-                      </>
-                    )}
-                  </Button>
-                </form>
-              </Form>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="invite" className="mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Invite New User</CardTitle>
-              <CardDescription>
-                Send an invitation to a new user to join the platform
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Form {...inviteUserForm}>
-                <form onSubmit={inviteUserForm.handleSubmit(onInviteUserSubmit)} className="space-y-4">
-                  <FormField
-                    control={inviteUserForm.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input placeholder="newuser@example.com" {...field} />
-                        </FormControl>
-                        <FormDescription>
-                          Enter the email of the person you want to invite
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={inviteUserForm.control}
-                    name="role"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Role</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select a role" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="admin">Admin</SelectItem>
-                            <SelectItem value="trainer">Trainer</SelectItem>
-                            <SelectItem value="rider">Rider</SelectItem>
-                            <SelectItem value="parent">Parent</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormDescription>
-                          Select the role they will have in this tenant
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <Button type="submit" className="w-full">
-                    {inviteUserForm.formState.isSubmitting ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Sending...
-                      </>
-                    ) : (
-                      <>
-                        <Send className="mr-2 h-4 w-4" />
-                        Send Invitation
-                      </>
-                    )}
-                  </Button>
-                </form>
-              </Form>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+              <Button type="submit" className="w-full">
+                {form.formState.isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Add User
+                  </>
+                )}
+              </Button>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
 
       {/* Current Members Table */}
       <Card>

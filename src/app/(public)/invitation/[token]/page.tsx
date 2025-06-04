@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { useQuery, useMutation, useConvexAuth } from "convex/react"
 import { api } from "../../../../../convex/_generated/api"
-import { SignInButton } from "@convex-dev/auth/react"
+import { useAuthActions } from "@convex-dev/auth/react"
 import { InvitationSignupForm } from "@/components/invitation-signup-form"
 
 import {
@@ -29,6 +29,7 @@ import {
 } from "lucide-react"
 import { format } from "date-fns"
 import { toast } from "sonner"
+import Link from "next/link"
 
 export default function InvitationPage() {
   const params = useParams<{ token: string }>()
@@ -36,6 +37,9 @@ export default function InvitationPage() {
   const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth()
   const [processingInvitation, setProcessingInvitation] = useState(false)
   const [showSignupForm, setShowSignupForm] = useState(false)
+  
+  // Get auth actions from Convex Auth
+  const { signOut } = useAuthActions()
   
   // Get token from URL params
   const token = params.token as string
@@ -54,7 +58,9 @@ export default function InvitationPage() {
   // Process invitation automatically if user is already logged in
   useEffect(() => {
     const handleExistingUser = async () => {
-      if (isAuthenticated && currentUser && invitation && !processingInvitation) {
+      // Only process if authenticated, we have user data, invitation is valid, and not already processing
+      if (isAuthenticated && currentUser && invitation && 
+          invitation.status === "valid" && !processingInvitation) {
         try {
           setProcessingInvitation(true)
           
@@ -88,16 +94,11 @@ export default function InvitationPage() {
     handleExistingUser()
   }, [isAuthenticated, currentUser, invitation, token, processInvitation, router, processingInvitation])
   
-  // Handle auth callbacks
-  const handleSignInSuccess = async () => {
-    // The useEffect will handle processing when they're authenticated
-  }
-  
   // Loading state
   if (isAuthLoading || invitation === undefined) {
     return (
-      <div className="container max-w-md py-12">
-        <Card>
+      <div className="flex min-h-screen items-center justify-center p-4">
+        <Card className="w-full max-w-md">
           <CardHeader>
             <Skeleton className="h-8 w-3/4 mb-2" />
             <Skeleton className="h-4 w-full" />
@@ -118,8 +119,8 @@ export default function InvitationPage() {
   // Error state - invitation not found or invalid
   if (invitation === null) {
     return (
-      <div className="container max-w-md py-12">
-        <Card>
+      <div className="flex min-h-screen items-center justify-center p-4">
+        <Card className="w-full max-w-md">
           <CardHeader>
             <CardTitle className="flex items-center text-destructive">
               <XCircle className="mr-2 h-5 w-5" />
@@ -136,6 +137,105 @@ export default function InvitationPage() {
               <AlertDescription>
                 The invitation you're trying to access doesn't exist or has been removed.
                 Please contact the person who invited you for a new invitation.
+              </AlertDescription>
+            </Alert>
+          </CardContent>
+          <CardFooter>
+            <Button className="w-full" onClick={() => router.push("/")}>
+              Go to Homepage
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+    )
+  }
+  
+  // Handle expired invitation
+  if (invitation.status === "expired") {
+    return (
+      <div className="flex min-h-screen items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="flex items-center text-amber-500">
+              <Clock className="mr-2 h-5 w-5" />
+              Invitation Expired
+            </CardTitle>
+            <CardDescription>
+              This invitation has expired and is no longer valid.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Alert variant="warning" className="border-amber-500">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Expired</AlertTitle>
+              <AlertDescription>
+                {invitation.message || "This invitation has expired. Please contact the person who invited you for a new invitation."}
+              </AlertDescription>
+            </Alert>
+          </CardContent>
+          <CardFooter>
+            <Button className="w-full" onClick={() => router.push("/")}>
+              Go to Homepage
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+    )
+  }
+  
+  // Handle already accepted invitation
+  if (invitation.status === "accepted") {
+    return (
+      <div className="flex min-h-screen items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="flex items-center text-green-500">
+              <CheckCircle2 className="mr-2 h-5 w-5" />
+              Invitation Already Accepted
+            </CardTitle>
+            <CardDescription>
+              This invitation has already been used.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Alert className="border-green-500">
+              <CheckCircle2 className="h-4 w-4 text-green-500" />
+              <AlertTitle>Already Accepted</AlertTitle>
+              <AlertDescription>
+                {invitation.message || "This invitation has already been accepted. You can sign in to access your account."}
+              </AlertDescription>
+            </Alert>
+          </CardContent>
+          <CardFooter>
+            <Button className="w-full" onClick={() => router.push("/sign-in")}>
+              Sign In
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+    )
+  }
+  
+  // Handle error state (tenant deleted, etc.)
+  if (invitation.status === "error") {
+    return (
+      <div className="flex min-h-screen items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="flex items-center text-destructive">
+              <XCircle className="mr-2 h-5 w-5" />
+              Invitation Error
+            </CardTitle>
+            <CardDescription>
+              There was a problem with this invitation.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>
+                {invitation.message || "There was an error with this invitation. The tenant may have been deleted or there was another issue."}
               </AlertDescription>
             </Alert>
           </CardContent>
@@ -169,15 +269,16 @@ export default function InvitationPage() {
   // If user is not authenticated and we're showing the signup form
   if (!isAuthenticated && showSignupForm) {
     return (
-      <div className="container max-w-md py-12">
+      <div className="flex min-h-screen items-center justify-center p-4">
         <InvitationSignupForm invitation={invitation} />
       </div>
     )
   }
   
+  // Valid invitation - show normal invitation page
   return (
-    <div className="container max-w-md py-12">
-      <Card>
+    <div className="flex min-h-screen items-center justify-center p-4">
+      <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Invitation to Join</CardTitle>
           <CardDescription>
@@ -188,9 +289,6 @@ export default function InvitationPage() {
           <div className="space-y-2">
             <div className="text-sm font-medium">Invitation Details</div>
             <div className="grid grid-cols-3 gap-2 text-sm">
-              <div className="text-muted-foreground">Tenant:</div>
-              <div className="col-span-2 font-medium">{invitation.tenantName}</div>
-              
               <div className="text-muted-foreground">Role:</div>
               <div className="col-span-2">
                 <Badge variant={badgeVariant}>{invitation.role}</Badge>
@@ -226,7 +324,7 @@ export default function InvitationPage() {
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Authentication Required</AlertTitle>
               <AlertDescription>
-                Please sign up or sign in to accept this invitation.
+                Please create an account to accept this invitation.
               </AlertDescription>
             </Alert>
           )}
@@ -265,15 +363,19 @@ export default function InvitationPage() {
                 )}
               </Button>
             ) : (
-              <SignInButton
-                onSuccess={handleSignInSuccess}
-                className="w-full"
+              <Button 
+                className="w-full" 
+                variant="outline" 
+                onClick={() => {
+                  signOut().then(() => {
+                    toast.success("Signed out successfully")
+                    window.location.reload()
+                  })
+                }}
               >
-                <Button className="w-full" variant="outline">
-                  <LogIn className="mr-2 h-4 w-4" />
-                  Sign in with correct account
-                </Button>
-              </SignInButton>
+                <LogIn className="mr-2 h-4 w-4" />
+                Sign in with correct account
+              </Button>
             )
           ) : (
             <>
@@ -284,19 +386,11 @@ export default function InvitationPage() {
                 Create Account & Accept Invitation
               </Button>
               
-              <div className="text-center text-sm text-muted-foreground">
-                Already have an account?
+              <div className="text-center text-xs text-muted-foreground mt-2">
+                <Link href={`/sign-in?redirect=/invitation/${token}`} className="hover:underline">
+                  Already have an account? Sign in
+                </Link>
               </div>
-              
-              <SignInButton
-                onSuccess={handleSignInSuccess}
-                className="w-full"
-              >
-                <Button className="w-full" variant="outline">
-                  <LogIn className="mr-2 h-4 w-4" />
-                  Sign in to accept
-                </Button>
-              </SignInButton>
             </>
           )}
         </CardFooter>
