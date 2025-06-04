@@ -14,7 +14,9 @@ import {
   Copy, 
   Clock, 
   CheckCircle, 
-  Mail
+  Mail,
+  UserX,
+  UserCheck
 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -53,6 +55,16 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -64,6 +76,7 @@ interface User {
   name: string
   email: string
   imageUrl: string
+  isActive?: boolean // Added isActive field
 }
 
 interface UserRole {
@@ -109,6 +122,10 @@ export function UserManagement() {
     },
   })
 
+  // State for user deactivation
+  const [userToDeactivate, setUserToDeactivate] = useState<Id<"users"> | null>(null)
+  const [deactivateDialogOpen, setDeactivateDialogOpen] = useState(false)
+
   // Queries and mutations
   const tenantMembers = useQuery(
     api.users.getTenantMembers,
@@ -120,8 +137,11 @@ export function UserManagement() {
     activeTenant ? { tenantId: activeTenant.teanantID } : "skip"
   )
 
-  // Only use createInvitation which handles both existing and new users
+  // Use createInvitation which handles both existing and new users
   const createInvitation = useMutation(api.invitations.createInvitation)
+  
+  // Add deactivateUser mutation
+  const deactivateUser = useMutation(api.users.deactivateUser)
 
   // Handle form submission - works for both existing and new users
   const onSubmit = async (values: UserFormValues) => {
@@ -164,6 +184,34 @@ export function UserManagement() {
         toast.error("Failed to copy invitation link")
       })
   }, [])
+
+  // Handle deactivate user click
+  const handleDeactivateClick = (userId: Id<"users">) => {
+    setUserToDeactivate(userId)
+    setDeactivateDialogOpen(true)
+  }
+
+  // Handle deactivate confirmation
+  const handleDeactivateConfirm = async () => {
+    if (!userToDeactivate) return
+
+    try {
+      // TODO: Add additional checks to prevent deactivating the last admin
+      // TODO: Add proper error handling for edge cases
+      // TODO: Add visual feedback during deactivation process
+      const result = await deactivateUser({ userId: userToDeactivate })
+      if (result.success) {
+        toast.success("User deactivated successfully")
+      } else {
+        toast.error("Failed to deactivate user")
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to deactivate user")
+    } finally {
+      setDeactivateDialogOpen(false)
+      setUserToDeactivate(null)
+    }
+  }
 
   // If no active tenant, show message
   if (!activeTenant) {
@@ -292,6 +340,8 @@ export function UserManagement() {
                   <TableHead>User</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Roles</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -334,6 +384,27 @@ export function UserManagement() {
                           )
                         })}
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      {/* TODO: This is currently showing a placeholder status since isActive might not be in the API response yet */}
+                      <Badge variant={member.isActive === false ? "outline" : "default"}>
+                        {member.isActive === false ? "Inactive" : "Active"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeactivateClick(member.id)}
+                        disabled={member.isActive === false}
+                        title={member.isActive === false ? "User already inactive" : "Deactivate user"}
+                      >
+                        {member.isActive === false ? (
+                          <UserCheck className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <UserX className="h-4 w-4 text-destructive" />
+                        )}
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -416,6 +487,31 @@ export function UserManagement() {
           )}
         </CardContent>
       </Card>
+
+      {/* Deactivate User Confirmation Dialog */}
+      <AlertDialog open={deactivateDialogOpen} onOpenChange={setDeactivateDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Deactivate User?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will prevent the user from accessing this tenant. Their data will be preserved,
+              and you can reactivate them later if needed.
+              
+              {/* TODO: Add more specific information about what deactivation means */}
+              {/* TODO: Consider showing the user's name here for clarity */}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handleDeactivateConfirm}
+            >
+              Deactivate
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
