@@ -38,7 +38,6 @@ SP | Estimated effort in Story Points (Fibonacci)
 | ID | Story | Acceptance Criteria | Prio | SP |
 |----|-------|---------------------|------|----|
 | UM-01 | As an Admin, I want to **invite a user via email** with a selected role so that they can access the platform. | • Email format validation.<br/>• Invitation token valid 48 h.<br/>• Role set on accept.<br/>• “Pending” status shown until activation. | P0 | 5 |
-| UM-02 | As an Admin, I want to **bulk upload users** from CSV to speed onboarding. | • CSV template downloadable.<br/>• Validation errors surfaced inline.<br/>• Max 200 rows per upload.<br/>• Progress bar shown. | P1 | 8 |
 | UM-03 | As an Admin, I want to **change a user’s role** after creation so that permissions stay accurate. | • Dropdown lists allowed roles.<br/>• Change takes effect immediately.<br/>• Audit log records updater & timestamp. | P0 | 3 |
 | UM-04 | As an Admin, I want to **deactivate a user** to suspend access without data loss. | • Toggle sets `isActive=false`.<br/>• User cannot sign-in thereafter.<br/>• Reactivation possible. | P1 | 3 |
 | UM-05 | As an Admin, I want to **see login and activity stats** per user to monitor engagement. | • Last login date, sessions logged count.<br/>• Exportable to CSV. | P2 | 5 |

@@ -1,3 +1,5 @@
+import { v } from "convex/values";
+
 export default {
   providers: [
     {
@@ -5,4 +7,8 @@ export default {
       applicationID: "convex",
     },
   ],
+  // Define custom fields for the users table
+  userFields: {
+    isActive: v.optional(v.boolean()),
+  },
 };

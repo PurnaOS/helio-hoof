@@ -25,7 +25,7 @@ export const getMyMemberTenants = query({
                 if (tenant && !tenant.deletedAt) {
                     memberTenants.push({
                         teanantID: membership.tenantId,
-                        memberID: membership._id,
+                        memberID: membership._id as Id<"memberships">,
                         role: membership.role,
                         tenantName: tenant.name,
                     });
