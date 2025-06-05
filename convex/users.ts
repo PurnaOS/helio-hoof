@@ -2,6 +2,7 @@ import { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
+import { logAction } from "./audit";
 
 // Define interfaces for better type safety
 interface UserWithRoles {
@@ -114,8 +115,11 @@ export const getTenantMembers = query({
 
 // Deactivate a user (sets isActive to false)
 export const deactivateUser = mutation({
-  args: { userId: v.id("users") },
-  handler: async (ctx, { userId }) => {
+  args: { 
+    userId: v.id("users"),
+    reason: v.optional(v.string())
+  },
+  handler: async (ctx, { userId, reason }) => {
     // Check if caller is authenticated
     const callerId = await getAuthUserId(ctx);
     if (callerId === null) {
@@ -164,6 +168,19 @@ export const deactivateUser = mutation({
         lastUpdated: Date.now()
       });
     }
+    
+    // Log the action in the audit log
+    await logAction(ctx, {
+      actionType: "user.deactivate",
+      performedBy: callerId,
+      tenantId: adminMemberships[0].tenantId,
+      timestamp: Date.now(),
+      targetId: userId.toString(),
+      targetType: "user",
+      metadata: {
+        reason: reason || "No reason provided"
+      }
+    });
 
     return { success: true, message: "User deactivated successfully" };
   },
@@ -205,8 +222,11 @@ export const initializeUser = mutation({
 
 // Reactivate a user (admin only)
 export const reactivateUser = mutation({
-  args: { userId: v.id("users") },
-  handler: async (ctx, { userId }) => {
+  args: { 
+    userId: v.id("users"),
+    reason: v.optional(v.string())
+  },
+  handler: async (ctx, { userId, reason }) => {
     // Check if caller is authenticated
     const callerId = await getAuthUserId(ctx);
     if (callerId === null) {
@@ -255,6 +275,19 @@ export const reactivateUser = mutation({
         lastUpdated: Date.now()
       });
     }
+    
+    // Log the action in the audit log
+    await logAction(ctx, {
+      actionType: "user.reactivate",
+      performedBy: callerId,
+      tenantId: adminMemberships[0].tenantId,
+      timestamp: Date.now(),
+      targetId: userId.toString(),
+      targetType: "user",
+      metadata: {
+        reason: reason || "No reason provided"
+      }
+    });
 
     return { success: true, message: "User reactivated successfully" };
   },

@@ -122,9 +122,12 @@ export function UserManagement() {
     },
   })
 
-  // State for user deactivation
+  // State for user deactivation/reactivation
   const [userToDeactivate, setUserToDeactivate] = useState<Id<"users"> | null>(null)
   const [deactivateDialogOpen, setDeactivateDialogOpen] = useState(false)
+  const [userToReactivate, setUserToReactivate] = useState<Id<"users"> | null>(null)
+  const [reactivateDialogOpen, setReactivateDialogOpen] = useState(false)
+  const [userActionReason, setUserActionReason] = useState<string>("")
 
   // Queries and mutations
   const tenantMembers = useQuery(
@@ -140,8 +143,9 @@ export function UserManagement() {
   // Use createInvitation which handles both existing and new users
   const createInvitation = useMutation(api.invitations.createInvitation)
   
-  // Add deactivateUser mutation
+  // Add deactivateUser and reactivateUser mutations
   const deactivateUser = useMutation(api.users.deactivateUser)
+  const reactivateUser = useMutation(api.users.reactivateUser)
 
   // Handle form submission - works for both existing and new users
   const onSubmit = async (values: UserFormValues) => {
@@ -196,12 +200,21 @@ export function UserManagement() {
     if (!userToDeactivate) return
 
     try {
-      // TODO: Add additional checks to prevent deactivating the last admin
-      // TODO: Add proper error handling for edge cases
-      // TODO: Add visual feedback during deactivation process
-      const result = await deactivateUser({ userId: userToDeactivate })
+      // Show loading toast
+      const loadingToast = toast.loading("Deactivating user...")
+      
+      // Call the deactivateUser mutation with reason if provided
+      const result = await deactivateUser({ 
+        userId: userToDeactivate,
+        reason: userActionReason || undefined
+      })
+      
+      // Dismiss loading toast and show success/error
+      toast.dismiss(loadingToast)
       if (result.success) {
-        toast.success("User deactivated successfully")
+        toast.success("User deactivated successfully", {
+          description: "The user will no longer be able to access the system."
+        })
       } else {
         toast.error("Failed to deactivate user")
       }
@@ -210,6 +223,45 @@ export function UserManagement() {
     } finally {
       setDeactivateDialogOpen(false)
       setUserToDeactivate(null)
+      setUserActionReason("")
+    }
+  }
+  
+  // Handle reactivate user click
+  const handleReactivateClick = (userId: Id<"users">) => {
+    setUserToReactivate(userId)
+    setReactivateDialogOpen(true)
+  }
+  
+  // Handle reactivate confirmation
+  const handleReactivateConfirm = async () => {
+    if (!userToReactivate) return
+
+    try {
+      // Show loading toast
+      const loadingToast = toast.loading("Reactivating user...")
+      
+      // Call the reactivateUser mutation with reason if provided
+      const result = await reactivateUser({ 
+        userId: userToReactivate,
+        reason: userActionReason || undefined
+      })
+      
+      // Dismiss loading toast and show success/error
+      toast.dismiss(loadingToast)
+      if (result.success) {
+        toast.success("User reactivated successfully", {
+          description: "The user can now access the system again."
+        })
+      } else {
+        toast.error("Failed to reactivate user")
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to reactivate user")
+    } finally {
+      setReactivateDialogOpen(false)
+      setUserToReactivate(null)
+      setUserActionReason("")
     }
   }
 
@@ -392,19 +444,27 @@ export function UserManagement() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeactivateClick(member.id)}
-                        disabled={member.isActive === false}
-                        title={member.isActive === false ? "User already inactive" : "Deactivate user"}
-                      >
-                        {member.isActive === false ? (
-                          <UserCheck className="h-4 w-4 text-muted-foreground" />
-                        ) : (
-                          <UserX className="h-4 w-4 text-destructive" />
-                        )}
-                      </Button>
+                      {member.isActive === false ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="bg-green-50 hover:bg-green-100 text-green-600 hover:text-green-700 border-green-200"
+                          onClick={() => handleReactivateClick(member.id)}
+                        >
+                          <UserCheck className="mr-2 h-4 w-4" />
+                          Reactivate
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 border-red-200"
+                          onClick={() => handleDeactivateClick(member.id)}
+                        >
+                          <UserX className="mr-2 h-4 w-4" />
+                          Deactivate
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -497,8 +557,16 @@ export function UserManagement() {
               This will prevent the user from accessing this tenant. Their data will be preserved,
               and you can reactivate them later if needed.
               
-              {/* TODO: Add more specific information about what deactivation means */}
-              {/* TODO: Consider showing the user's name here for clarity */}
+              <div className="mt-4">
+                <FormLabel htmlFor="deactivation-reason">Reason (optional):</FormLabel>
+                <Input 
+                  id="deactivation-reason"
+                  className="mt-2"
+                  placeholder="Enter reason for deactivation"
+                  value={userActionReason}
+                  onChange={(e) => setUserActionReason(e.target.value)}
+                />
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -508,6 +576,38 @@ export function UserManagement() {
               onClick={handleDeactivateConfirm}
             >
               Deactivate
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      
+      {/* Reactivate User Confirmation Dialog */}
+      <AlertDialog open={reactivateDialogOpen} onOpenChange={setReactivateDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reactivate User?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will restore the user's access to this tenant.
+              
+              <div className="mt-4">
+                <FormLabel htmlFor="reactivation-reason">Reason (optional):</FormLabel>
+                <Input 
+                  id="reactivation-reason"
+                  className="mt-2"
+                  placeholder="Enter reason for reactivation"
+                  value={userActionReason}
+                  onChange={(e) => setUserActionReason(e.target.value)}
+                />
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+              onClick={handleReactivateConfirm}
+            >
+              Reactivate
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

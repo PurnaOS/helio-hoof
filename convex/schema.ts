@@ -33,6 +33,22 @@ const schema = defineSchema({
     lastUpdated: v.number(),
   }).index("by_user", ["userId"]),
   
+  // Audit logs for administrative actions
+  auditLogs: defineTable({
+    actionType: v.string(), // Type of action performed (e.g., "user.deactivate")
+    performedBy: v.id("users"), // User who performed the action
+    tenantId: v.id("tenants"), // Tenant where the action was performed
+    timestamp: v.number(), // When the action was performed
+    targetId: v.optional(v.string()), // Optional ID of the affected resource (stored as string)
+    targetType: v.optional(v.string()), // Type of the affected resource
+    metadata: v.optional(v.object({})), // Additional context-specific data
+    ipAddress: v.optional(v.string()), // IP address of the actor (if available)
+  })
+    .index("by_tenant", ["tenantId"]) // Query by tenant
+    .index("by_performer", ["performedBy"]) // Query by performer
+    .index("by_target", ["targetId", "targetType"]) // Query by target
+    .index("by_action", ["actionType"]), // Query by action type
+  
   reactivationRequests: defineTable({
     userId: v.id("users"),
     email: v.string(),
