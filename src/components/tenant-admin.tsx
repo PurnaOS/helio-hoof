@@ -92,22 +92,29 @@ export function TenantAdmin() {
   const handleDeleteConfirm = async () => {
     if (tenantToDelete) {
       try {
-        await deleteTenant({ tenantId: tenantToDelete })
+        // Check if the tenant to delete is the active tenant
+        const isActiveTenant = Boolean(activeTenant && activeTenant.teanantID === tenantToDelete);
+        
+        await deleteTenant({ 
+          tenantId: tenantToDelete,
+          isActiveTenant
+        });
         
         // If this was the active tenant, clear it
-        if (activeTenant && activeTenant.teanantID === tenantToDelete) {
+        if (isActiveTenant) {
           // Find another tenant to set as active, or set to null if none available
           const otherTenantRole = myTenantRoles?.find(
             tr => tr.teanantID !== tenantToDelete
-          )
-          setActiveTenant(otherTenantRole || null)
+          );
+          setActiveTenant(otherTenantRole || null);
         }
       } catch (error) {
-        console.error("Failed to delete tenant:", error)
+        console.error("Failed to delete tenant:", error);
+        toast.error(error instanceof Error ? error.message : "Failed to delete tenant");
       }
     }
-    setDeleteDialogOpen(false)
-    setTenantToDelete(null)
+    setDeleteDialogOpen(false);
+    setTenantToDelete(null);
   }
 
   // Handle creating a new tenant
@@ -219,14 +226,27 @@ export function TenantAdmin() {
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-destructive"
-                        onClick={() => handleDeleteClick(tenant._id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      {/* Hide delete button for active tenant */}
+                      {!(activeTenant && activeTenant.teanantID === tenant._id) ? (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-destructive"
+                          onClick={() => handleDeleteClick(tenant._id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-muted-foreground cursor-not-allowed"
+                          disabled
+                          title="Cannot delete the active tenant. Switch to another tenant first."
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   )}
                 </TableCell>

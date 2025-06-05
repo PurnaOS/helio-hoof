@@ -65,11 +65,16 @@ export const updateTenantName = mutation({
 
 // Soft delete tenant
 export const deleteTenant = mutation({
-  args: { tenantId: v.id("tenants") },
-  handler: async (ctx, { tenantId }) => {
+  args: { tenantId: v.id("tenants"), isActiveTenant: v.boolean() },
+  handler: async (ctx, { tenantId, isActiveTenant }) => {
     const userId = await getAuthUserId(ctx);
     if (userId === null) {
       throw new Error("User not authenticated");
+    }
+    
+    // Prevent deletion of active tenant
+    if (isActiveTenant) {
+      throw new Error("Cannot delete the currently active tenant. Please switch to another tenant first.");
     }
 
     // Check if user is admin in this tenant
