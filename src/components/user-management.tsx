@@ -139,6 +139,9 @@ export function UserManagement() {
     api.invitations.getInvitationsByTenant,
     activeTenant ? { tenantId: activeTenant.teanantID } : "skip"
   )
+  
+  // Get current user information
+  const currentUser = useQuery(api.users.getMe)
 
   // Use createInvitation which handles both existing and new users
   const createInvitation = useMutation(api.invitations.createInvitation)
@@ -455,15 +458,28 @@ export function UserManagement() {
                           Reactivate
                         </Button>
                       ) : (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 border-red-200"
-                          onClick={() => handleDeactivateClick(member.id)}
-                        >
-                          <UserX className="mr-2 h-4 w-4" />
-                          Deactivate
-                        </Button>
+                        currentUser && currentUser._id.toString() === member.id.toString() ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="bg-gray-50 hover:bg-gray-100 text-gray-400 border-gray-200"
+                            disabled
+                            title="You cannot deactivate your own account"
+                          >
+                            <UserX className="mr-2 h-4 w-4" />
+                            Deactivate
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 border-red-200"
+                            onClick={() => handleDeactivateClick(member.id)}
+                          >
+                            <UserX className="mr-2 h-4 w-4" />
+                            Deactivate
+                          </Button>
+                        )
                       )}
                     </TableCell>
                   </TableRow>
@@ -558,7 +574,7 @@ export function UserManagement() {
               and you can reactivate them later if needed.
               
               <div className="mt-4">
-                <FormLabel htmlFor="deactivation-reason">Reason (optional):</FormLabel>
+                <label htmlFor="deactivation-reason" className="text-sm font-medium">Reason (optional):</label>
                 <Input 
                   id="deactivation-reason"
                   className="mt-2"
@@ -590,7 +606,7 @@ export function UserManagement() {
               This will restore the user's access to this tenant.
               
               <div className="mt-4">
-                <FormLabel htmlFor="reactivation-reason">Reason (optional):</FormLabel>
+                <label htmlFor="reactivation-reason" className="text-sm font-medium">Reason (optional):</label>
                 <Input 
                   id="reactivation-reason"
                   className="mt-2"

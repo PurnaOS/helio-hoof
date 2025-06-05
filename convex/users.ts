@@ -147,6 +147,11 @@ export const deactivateUser = mutation({
     if (!user) {
       throw new Error("User not found");
     }
+    
+    // Prevent users from deactivating themselves
+    if (userId.toString() === callerId.toString()) {
+      throw new Error("You cannot deactivate your own account");
+    }
 
     // Check if the user status record exists
     const userStatus = await ctx.db

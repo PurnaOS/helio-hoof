@@ -41,7 +41,7 @@ const schema = defineSchema({
     timestamp: v.number(), // When the action was performed
     targetId: v.optional(v.string()), // Optional ID of the affected resource (stored as string)
     targetType: v.optional(v.string()), // Type of the affected resource
-    metadata: v.optional(v.object({})), // Additional context-specific data
+    metadata: v.optional(v.object({ reason: v.optional(v.string()) })), // Additional context-specific data
     ipAddress: v.optional(v.string()), // IP address of the actor (if available)
   })
     .index("by_tenant", ["tenantId"]) // Query by tenant
