@@ -3,8 +3,8 @@
 import * as React from "react"
 import { useState } from "react"
 import { useQuery, useMutation } from "convex/react"
-import { api } from "../../../../../convex/_generated/api"
-import { Id } from "../../../../../convex/_generated/dataModel"
+import { api } from "../../../../../../convex/_generated/api"
+import { Id } from "../../../../../../convex/_generated/dataModel"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -29,7 +29,7 @@ interface HorseDetailClientProps {
   id: string;
 }
 
-export const HorseDetailClient = ({ id }: HorseDetailClientProps) => {
+export const HorseDetailClient = ({ id }: HorseDetailClientProps): React.ReactElement => {
   const router = useRouter()
   const horseId = id as Id<"horses">
   const [isEditDialogOpen, setIsEditDialogOpen] = useState<boolean>(false)

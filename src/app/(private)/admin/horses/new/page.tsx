@@ -6,11 +6,11 @@ import { Button } from "@/components/ui/button"
 import { ChevronLeft } from "lucide-react"
 import { useRouter } from "next/navigation"
 
-export default function NewHorsePage() {
+export default function NewHorsePage(): React.ReactElement {
   const router = useRouter()
   
-  const handleSuccess = () => {
-    router.push("/horses")
+  const handleSuccess = (): void => {
+    router.push("/admin/horses")
   }
   
   return (

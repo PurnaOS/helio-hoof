@@ -7,7 +7,7 @@ interface HorseDetailPageProps {
   }
 }
 
-export default function HorseDetailPage({ params }: HorseDetailPageProps) {
+export default function HorseDetailPage({ params }: HorseDetailPageProps): React.ReactElement {
   // Access id directly here - this is fine in a Server Component
   return <HorseDetailClient id={params.id} />
 }

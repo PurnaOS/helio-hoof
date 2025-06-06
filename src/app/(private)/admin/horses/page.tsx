@@ -3,8 +3,8 @@
 import * as React from "react"
 import { useState } from "react"
 import { useQuery } from "convex/react"
-import { api } from "../../../../convex/_generated/api"
-import { Id } from "../../../../convex/_generated/dataModel"
+import { api } from "../../../../../convex/_generated/api"
+import { Id } from "../../../../../convex/_generated/dataModel"
 import { useTenant } from "@/components/TenantContextProvider"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -19,7 +19,7 @@ import { PlusCircle, Search, Filter, ChevronRight } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 
-export default function HorsesPage() {
+export default function HorsesPage(): React.ReactElement {
   const router = useRouter()
   const { activeTenant } = useTenant()
   const [searchQuery, setSearchQuery] = useState<string>("")
@@ -67,8 +67,8 @@ export default function HorsesPage() {
   })
   
   // Navigate to add new horse page
-  const handleAddHorse = () => {
-    router.push("/horses/new")
+  const handleAddHorse = (): void => {
+    router.push("/admin/horses/new")
   }
   
   // Calculate age from date of birth
@@ -88,7 +88,7 @@ export default function HorsesPage() {
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Horse Registry</h1>
+        <h1 className="text-3xl font-bold">Horse Management</h1>
         <Button onClick={handleAddHorse}>
           <PlusCircle className="mr-2 h-4 w-4" />
           Add New Horse
@@ -173,7 +173,7 @@ export default function HorsesPage() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filteredHorses.map((horse) => (
-                  <Link href={`/horses/${horse._id}`} key={horse._id.toString()}>
+                  <Link href={`/admin/horses/${horse._id}`} key={horse._id.toString()}>
                     <Card className={`cursor-pointer transition-all hover:shadow-md ${!horse.isActive ? 'opacity-60' : ''}`}>
                       <CardContent className="p-4">
                         <div className="flex items-center gap-4">

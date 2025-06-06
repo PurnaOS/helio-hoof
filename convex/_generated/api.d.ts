@@ -19,6 +19,7 @@ import type * as horses from "../horses.js";
 import type * as http from "../http.js";
 import type * as invitations from "../invitations.js";
 import type * as reactivation from "../reactivation.js";
+import type * as stats from "../stats.js";
 import type * as tenantrole from "../tenantrole.js";
 import type * as tenants from "../tenants.js";
 import type * as tenants_updated from "../tenants_updated.js";
@@ -40,6 +41,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   invitations: typeof invitations;
   reactivation: typeof reactivation;
+  stats: typeof stats;
   tenantrole: typeof tenantrole;
   tenants: typeof tenants;
   tenants_updated: typeof tenants_updated;
