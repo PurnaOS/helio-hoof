@@ -4,6 +4,48 @@ _This file tracks engineering tasks derived from the user-story backlog._
 
 ---
 
+## HR-01 – Add horse profile
+
+**Story**  
+_As an **Admin**, I want to **add a new horse profile** so that riders can log sessions against it._
+
+### Acceptance Criteria
+- Required fields: name, date of birth, breed
+- Optionally assign primary rider & trainer
+- Avatar upload ≤1 MB
+
+### Implementation Steps
+- [ ] Database Schema:
+  - [ ] Create `horses` table in `convex/schema.ts` with required fields
+  - [ ] Add relationships to users (riders and trainers)
+  - [ ] Add support for avatar image storage
+- [ ] Backend:
+  - [ ] Create `createHorse` mutation in `convex/horses.ts`
+  - [ ] Create `getHorses` query to retrieve horse profiles
+  - [ ] Create `getHorseById` query for individual horse details
+  - [ ] Add validation for required fields
+  - [ ] Implement audit logging for horse creation
+- [ ] Frontend:
+  - [ ] Create `HorseForm` component for adding/editing horses
+  - [ ] Implement avatar upload with image preview and cropping
+  - [ ] Add form validation with error messages
+  - [ ] Create success/error toast notifications
+  - [ ] Add horse profile page to view details
+- [ ] Testing:
+  - [ ] Write unit tests for mutations and queries
+  - [ ] Add integration tests for form submission
+
+### Files to Modify / Create
+- [ ] `convex/schema.ts` – add `horses` table schema
+- [ ] `convex/horses.ts` (new) – implement horse-related mutations and queries
+- [ ] `src/components/horse-form.tsx` (new) – create form component for adding horses
+- [ ] `src/components/horse-avatar.tsx` (new) – implement avatar upload and preview
+- [ ] `src/app/(private)/horses/page.tsx` (new) – create horses list page
+- [ ] `src/app/(private)/horses/[id]/page.tsx` (new) – create horse detail page
+- [ ] `src/app/(private)/horses/new/page.tsx` (new) – create new horse page
+
+---
+
 ## UM-04 – Deactivate a user
 
 **Story**  

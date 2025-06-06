@@ -13,6 +13,7 @@ import {
   LogOut,
   Shield
 } from "lucide-react"
+import { HorseIcon } from "@/components/icons/horse-icon"
 
 import { cn } from "@/lib/utils"
 import {
@@ -157,6 +158,18 @@ export function AppSidebar() {
               <Link href="/admin/users" className="flex items-center gap-2">
                 <Users className="h-4 w-4 shrink-0" />
                 <span>User Management</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              asChild
+              isActive={pathname.startsWith("/horses")}
+              tooltip="Horses"
+            >
+              <Link href="/horses" className="flex items-center gap-2">
+                <HorseIcon className="h-4 w-4 shrink-0" />
+                <span>Horses</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

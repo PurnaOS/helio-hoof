@@ -19,7 +19,11 @@ export type AuditActionType =
   | "tenant.delete"
   | "tenant.update"
   | "invitation.create"
-  | "invitation.revoke";
+  | "invitation.revoke"
+  | "horse.create"
+  | "horse.update"
+  | "horse.activate"
+  | "horse.deactivate";
 
 // Schema for audit log entries
 export interface AuditLogEntry {

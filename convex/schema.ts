@@ -41,7 +41,11 @@ const schema = defineSchema({
     timestamp: v.number(), // When the action was performed
     targetId: v.optional(v.string()), // Optional ID of the affected resource (stored as string)
     targetType: v.optional(v.string()), // Type of the affected resource
-    metadata: v.optional(v.object({ reason: v.optional(v.string()) })), // Additional context-specific data
+    metadata: v.optional(v.object({ 
+      reason: v.optional(v.string()),
+      horseName: v.optional(v.string()),
+      breed: v.optional(v.string())
+    })), // Additional context-specific data
     ipAddress: v.optional(v.string()), // IP address of the actor (if available)
   })
     .index("by_tenant", ["tenantId"]) // Query by tenant
@@ -93,6 +97,28 @@ const schema = defineSchema({
     .index("by_tenant", ["tenantId"])
     .index("by_email", ["email"])
     .index("by_token", ["token"]),
+    
+  // Horse profiles
+  horses: defineTable({
+    name: v.string(),
+    tenantId: v.id("tenants"),
+    dateOfBirth: v.number(), // Timestamp
+    breed: v.string(),
+    primaryRiderId: v.optional(v.id("users")),
+    primaryTrainerId: v.optional(v.id("users")),
+    avatarUrl: v.optional(v.string()),
+    avatarStorageId: v.optional(v.id("_storage")),
+    isActive: v.boolean(),
+    createdAt: v.number(),
+    createdBy: v.id("users"),
+    updatedAt: v.optional(v.number()),
+    updatedBy: v.optional(v.id("users")),
+    notes: v.optional(v.string()),
+  })
+    .index("by_tenant", ["tenantId"])
+    .index("by_primary_rider", ["primaryRiderId"])
+    .index("by_primary_trainer", ["primaryTrainerId"])
+    .index("by_name", ["name"]),
 });
 
 export default schema;

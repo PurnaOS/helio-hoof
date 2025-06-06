@@ -17,6 +17,33 @@ interface UserWithRoles {
   }>;
 }
 
+// Get a user by ID
+export const getUserById = query({
+  args: {
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    const authUserId = await getAuthUserId(ctx);
+    if (authUserId === null) {
+      throw new Error("User not authenticated");
+    }
+    
+    const user = await ctx.db.get(args.userId);
+    if (!user) return null;
+    
+    // Get active status
+    const userStatus = await ctx.db
+      .query("userStatus")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .first();
+
+    return {
+      ...user,
+      isActive: userStatus?.isActive ?? true // Default to active if no status record
+    };
+  },
+});
+
 // Get the currently authenticated user
 export const getMe = query({
   handler: async (ctx) => {
