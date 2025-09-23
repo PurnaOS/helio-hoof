@@ -298,9 +298,10 @@ export function MultiImageAnalysis({
                           <Image
                             src={correspondingImage.previewUrl}
                             alt={`Analysis image ${imageAnalysis.image_number}`}
-                            className="w-full h-48 object-cover rounded-lg bg-gray-50 dark:bg-gray-900"
+                            className="w-full h-auto object-contain rounded-lg bg-gray-50 dark:bg-gray-900 max-h-96"
                             width={400}
-                            height={192}
+                            height={300}
+                            style={{ aspectRatio: "auto" }}
                           />
                           <div className="absolute bottom-2 left-2 right-2">
                             <div className="bg-black/70 text-white text-xs px-2 py-1 rounded truncate">
