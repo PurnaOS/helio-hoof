@@ -1,4 +1,9 @@
 import Anthropic from "@anthropic-ai/sdk";
+import {
+  mockAnalyzeImage,
+  mockAnalyzeMultipleImages,
+  shouldUseMockMode,
+} from "./mock-anthropic";
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -61,7 +66,13 @@ Provide your response in this exact JSON format:
 
 Be specific, constructive, and use proper equestrian terminology. Focus on actionable feedback that helps improve performance.`,
 }: ImageAnalysisRequest): Promise<ImageAnalysisResponse> {
+  // Use mock response in development mode if enabled
+  if (shouldUseMockMode()) {
+    return mockAnalyzeImage({ imageBase64, mimeType, prompt });
+  }
+
   try {
+
     const message = await anthropic.messages.create({
       model: "claude-3-5-sonnet-20240620",
       max_tokens: 1000,
@@ -92,7 +103,7 @@ Be specific, constructive, and use proper equestrian terminology. Focus on actio
 
     const analysis =
       message.content[0].type === "text" ? message.content[0].text : "";
-
+    console.log("Anthropic analysis from actual server",);
     return {
       analysis,
       success: true,
@@ -110,6 +121,11 @@ Be specific, constructive, and use proper equestrian terminology. Focus on actio
 export async function analyzeMultipleImages(
   images: MultipleImageData[],
 ): Promise<ImageAnalysisResponse> {
+  // Use mock response in development mode if enabled
+  if (shouldUseMockMode()) {
+    return mockAnalyzeMultipleImages(images);
+  }
+
   try {
     const imageContent = images.map((img) => ({
       type: "image" as const,

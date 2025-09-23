@@ -1,7 +1,20 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { analyzeMultipleImages } from "@/lib/anthropic";
+import { logDevConfig, validateDevSetup } from "@/lib/dev-config";
 
 export async function POST(request: NextRequest) {
+  // Log development configuration
+  logDevConfig();
+
+  // Validate setup
+  const validation = validateDevSetup();
+  if (!validation.valid) {
+    console.error("❌ Configuration Error:", validation.message);
+    return NextResponse.json(
+      { error: `Configuration Error: ${validation.message}` },
+      { status: 500 },
+    );
+  }
   try {
     const body = await request.json();
     const { images } = body;
