@@ -8,11 +8,14 @@ import {
   Star,
   Target,
   Users,
+  Image as ImageIcon,
 } from "lucide-react";
+import Image from "next/image";
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { exportToPDF } from "@/lib/pdf-export";
+import type { UploadedImage } from "@/components/image-upload";
 
 interface EquestrianAnalysisData {
   rider_analysis: {
@@ -34,6 +37,8 @@ interface EquestrianAnalysisData {
 interface EquestrianAnalysisProps {
   analysis: string;
   onReset: () => void;
+  showResetButton?: boolean;
+  uploadedImages?: UploadedImage[];
 }
 
 function ScoreDisplay({ score, label }: { score: number; label: string }) {
@@ -79,6 +84,8 @@ function AnalysisSection({
 export function EquestrianAnalysis({
   analysis,
   onReset,
+  showResetButton = true,
+  uploadedImages = [],
 }: EquestrianAnalysisProps) {
   const [copied, setCopied] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -90,12 +97,39 @@ export function EquestrianAnalysis({
   // Parse JSON from analysis on component mount
   React.useEffect(() => {
     try {
-      // Try to extract JSON from the analysis text
-      const jsonMatch = analysis.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const jsonStr = jsonMatch[0];
-        const parsed = JSON.parse(jsonStr) as EquestrianAnalysisData;
-        setParsedData(parsed);
+      let parsed: any = null;
+
+      // Try parsing entire response as JSON first
+      try {
+        parsed = JSON.parse(analysis);
+      } catch {
+        // Extract JSON from text using regex
+        const jsonMatch = analysis.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          parsed = JSON.parse(jsonMatch[0]);
+        }
+      }
+
+      if (parsed && typeof parsed === "object") {
+        // Create normalized structure with defaults
+        const normalizedData: EquestrianAnalysisData = {
+          rider_analysis: {
+            overall_score: Number(parsed.rider_analysis?.overall_score || 0),
+            positives: Array.isArray(parsed.rider_analysis?.positives) ? parsed.rider_analysis.positives : [],
+            areas_for_improvement: Array.isArray(parsed.rider_analysis?.areas_for_improvement) ? parsed.rider_analysis.areas_for_improvement : [],
+            priority_focus: parsed.rider_analysis?.priority_focus || "Focus on core fundamentals and position.",
+          },
+          horse_analysis: {
+            overall_score: Number(parsed.horse_analysis?.overall_score || 0),
+            positives: Array.isArray(parsed.horse_analysis?.positives) ? parsed.horse_analysis.positives : [],
+            technical_notes: Array.isArray(parsed.horse_analysis?.technical_notes) ? parsed.horse_analysis.technical_notes : [],
+            athletic_assessment: parsed.horse_analysis?.athletic_assessment || "Good overall athletic ability.",
+          },
+          partnership_notes: parsed.partnership_notes || "Good partnership between horse and rider.",
+          safety_observations: parsed.safety_observations || "No safety concerns observed.",
+        };
+
+        setParsedData(normalizedData);
         setParseError("");
       } else {
         setParseError("Could not find JSON data in analysis response");
@@ -105,6 +139,7 @@ export function EquestrianAnalysis({
       console.error("Parse error:", error);
     }
   }, [analysis]);
+
 
   const copyToClipboard = async () => {
     try {
@@ -139,11 +174,12 @@ export function EquestrianAnalysis({
 
   if (parseError || !parsedData) {
     return (
-      <div className="w-full max-w-4xl mx-auto space-y-4">
+      <div className="w-full max-w-6xl mx-auto space-y-6">
+        {/* Header */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-            <CardTitle className="text-xl font-semibold">
-              Analysis Results
+            <CardTitle className="text-2xl font-bold">
+              🏇 Equestrian Analysis Results
             </CardTitle>
             <div className="flex gap-2">
               <Button
@@ -160,7 +196,7 @@ export function EquestrianAnalysis({
                 ) : (
                   <>
                     <Copy className="h-4 w-4" />
-                    Copy
+                    Copy Raw Data
                   </>
                 )}
               </Button>
@@ -180,26 +216,78 @@ export function EquestrianAnalysis({
                   </>
                 )}
               </Button>
-              <Button variant="outline" size="sm" onClick={onReset}>
-                Analyze Another Image
-              </Button>
+              {showResetButton && (
+                <Button variant="outline" size="sm" onClick={onReset}>
+                  Analyze Another Image
+                </Button>
+              )}
             </div>
           </CardHeader>
-          <CardContent>
+        </Card>
+
+        {/* PDF Export Content */}
+        <div id="single-analysis-content">
+          {/* Image Display */}
+          {uploadedImages && uploadedImages.length > 0 && (
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ImageIcon className="h-5 w-5" />
+                  Analyzed Image
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="relative w-full max-w-2xl mx-auto">
+                  <Image
+                    src={uploadedImages[0].previewUrl}
+                    alt="Analyzed equestrian image"
+                    width={800}
+                    height={600}
+                    className="w-full h-auto rounded-lg shadow-md object-contain"
+                    style={{ maxHeight: '500px' }}
+                  />
+                  <div className="mt-3 text-center">
+                    <div className="inline-flex items-center px-3 py-1 rounded-full text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                      <ImageIcon className="h-3 w-3 mr-1" />
+                      {uploadedImages[0].file.name} ({(uploadedImages[0].file.size / 1024).toFixed(1)} KB)
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Analysis Content */}
+          <AnalysisSection title="Analysis Results" icon={Target}>
             {parseError && (
-              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-4">
-                <p className="text-yellow-700 dark:text-yellow-300 text-sm">
-                  {parseError}. Showing raw response:
-                </p>
+              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 mb-6">
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0">
+                    <div className="w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center">
+                      <span className="text-white text-xs font-bold">!</span>
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-amber-800 dark:text-amber-200 mb-1">
+                      Alternative Format Detected
+                    </h4>
+                    <p className="text-amber-700 dark:text-amber-300 text-sm">
+                      The analysis was returned in an unstructured format. The complete response is displayed below.
+                    </p>
+                  </div>
+                </div>
               </div>
             )}
-            <div className="prose prose-sm max-w-none dark:prose-invert">
-              <div className="whitespace-pre-wrap text-gray-700 dark:text-gray-300 leading-relaxed">
-                {analysis}
+
+            <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+              <div className="prose prose-sm max-w-none dark:prose-invert">
+                <div className="whitespace-pre-wrap text-gray-700 dark:text-gray-300 leading-relaxed">
+                  {analysis}
+                </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </AnalysisSection>
+        </div>
       </div>
     );
   }
@@ -247,15 +335,47 @@ export function EquestrianAnalysis({
                 </>
               )}
             </Button>
-            <Button variant="outline" size="sm" onClick={onReset}>
-              Analyze Another Image
-            </Button>
+            {showResetButton && (
+              <Button variant="outline" size="sm" onClick={onReset}>
+                Analyze Another Image
+              </Button>
+            )}
           </div>
         </CardHeader>
       </Card>
 
       {/* Analysis Content for PDF Export */}
       <div id="single-analysis-content">
+        {/* Image Display */}
+        {uploadedImages && uploadedImages.length > 0 && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ImageIcon className="h-5 w-5" />
+                Analyzed Image
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="relative w-full max-w-2xl mx-auto">
+                <Image
+                  src={uploadedImages[0].previewUrl}
+                  alt="Analyzed equestrian image"
+                  width={800}
+                  height={600}
+                  className="w-full h-auto rounded-lg shadow-md object-contain"
+                  style={{ maxHeight: '500px' }}
+                />
+                <div className="mt-3 text-center">
+                  <div className="inline-flex items-center px-3 py-1 rounded-full text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                    <ImageIcon className="h-3 w-3 mr-1" />
+                    {uploadedImages[0].file.name} ({(uploadedImages[0].file.size / 1024).toFixed(1)} KB)
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Scores Overview */}
         <Card>
           <CardHeader>

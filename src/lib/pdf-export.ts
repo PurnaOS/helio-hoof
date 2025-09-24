@@ -83,7 +83,9 @@ export async function exportToPDF({
     Array.from(allElements).forEach((el, index) => {
       const htmlEl = el as HTMLElement;
       // Store original style for restoration
-      originalStyles.set(el, htmlEl.style.cssText);
+      if (originalStyles) {
+        originalStyles.set(el, htmlEl.style.cssText);
+      }
 
       try {
         const computedStyle = getComputedStyle(el);
@@ -520,7 +522,7 @@ export async function exportToPDF({
 
     // Restore original inline styles
     if (originalStyles) {
-      originalStyles.forEach((styleText, el) => {
+      originalStyles?.forEach((styleText, el) => {
         (el as HTMLElement).style.cssText = styleText;
       });
       originalStyles = null;
@@ -536,7 +538,7 @@ export async function exportToPDF({
 
     // Restore original inline styles even on error
     if (originalStyles) {
-      originalStyles.forEach((styleText, el) => {
+      originalStyles?.forEach((styleText, el) => {
         try {
           (el as HTMLElement).style.cssText = styleText;
         } catch (_e) {
@@ -629,7 +631,9 @@ export function prepareElementForPDF(elementId: string): void {
   // Function to recursively fix colors in elements
   const fixColorsRecursively = (el: Element) => {
     // Store original style
-    originalStyles.set(el, (el as HTMLElement).style.cssText);
+    if (originalStyles) {
+      originalStyles.set(el, (el as HTMLElement).style.cssText);
+    }
 
     const computedStyle = getComputedStyle(el);
     const htmlEl = el as HTMLElement;

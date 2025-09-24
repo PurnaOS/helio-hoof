@@ -4,9 +4,11 @@ import { Loader2, Upload, X } from "lucide-react";
 import Image from "next/image";
 import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
+import { useUser } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn, convertToBase64, validateImageFile } from "@/lib/utils";
+import Link from "next/link";
 
 interface ImageUploadProps {
   onAnalysis: (analysis: string, images?: UploadedImage[]) => void;
@@ -20,6 +22,7 @@ export interface UploadedImage {
 }
 
 export function ImageUpload({ onAnalysis, onError }: ImageUploadProps) {
+  const { isSignedIn, isLoaded } = useUser();
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
@@ -56,6 +59,53 @@ export function ImageUpload({ onAnalysis, onError }: ImageUploadProps) {
     maxSize: 10 * 1024 * 1024, // 10MB
   });
 
+  // Show loading state while Clerk is initializing
+  if (!isLoaded) {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <Card>
+          <CardContent className="p-8">
+            <div className="text-center">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+              <p className="text-gray-600 dark:text-gray-400">Loading...</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show sign-in prompt if user is not authenticated
+  if (!isSignedIn) {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <Card>
+          <CardContent className="p-8">
+            <div className="text-center">
+              <div className="mb-6">
+                <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                  Sign in to start analyzing
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400">
+                  Create an account or sign in to upload and analyze your show jumping images
+                </p>
+              </div>
+              <div className="flex gap-4 justify-center">
+                <Link href="/sign-in">
+                  <Button variant="outline">Sign In</Button>
+                </Link>
+                <Link href="/sign-up">
+                  <Button>Get Started</Button>
+                </Link>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   const removeImage = (imageId: string) => {
     setUploadedImages((prev) => {
       const imageToRemove = prev.find((img) => img.id === imageId);
@@ -78,31 +128,60 @@ export function ImageUpload({ onAnalysis, onError }: ImageUploadProps) {
 
     setIsAnalyzing(true);
     try {
-      const imageData = await Promise.all(
-        uploadedImages.map(async (img) => ({
-          base64: await convertToBase64(img.file),
-          mimeType: img.file.type,
-          filename: img.file.name,
-        })),
-      );
+      if (uploadedImages.length === 1) {
+        // Single image analysis
+        const img = uploadedImages[0];
+        const base64 = await convertToBase64(img.file);
 
-      const response = await fetch("/api/analyze-images", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          images: imageData,
-        }),
-      });
+        const response = await fetch("/api/analyze-image", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            imageBase64: base64,
+            mimeType: img.file.type,
+            filename: img.file.name,
+            size: img.file.size,
+          }),
+        });
 
-      const data = await response.json();
+        const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to analyze images");
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to analyze image");
+        }
+
+        onAnalysis(data.analysis, uploadedImages);
+      } else {
+        // Multi-image analysis
+        const imageData = await Promise.all(
+          uploadedImages.map(async (img) => ({
+            base64: await convertToBase64(img.file),
+            mimeType: img.file.type,
+            filename: img.file.name,
+            size: img.file.size,
+          })),
+        );
+
+        const response = await fetch("/api/analyze-images", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            images: imageData,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to analyze images");
+        }
+
+        onAnalysis(data.analysis, uploadedImages);
       }
-
-      onAnalysis(data.analysis, uploadedImages);
     } catch (error) {
       onError(
         error instanceof Error ? error.message : "Failed to analyze images",

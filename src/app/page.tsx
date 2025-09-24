@@ -1,9 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { EquestrianAnalysis } from "@/components/equestrian-analysis";
 import { ImageUpload, type UploadedImage } from "@/components/image-upload";
 import { MultiImageAnalysis } from "@/components/multi-image-analysis";
+import { UserNav } from "@/components/auth/user-nav";
+import { Button } from "@/components/ui/button";
 
 export default function Home() {
   const [analysis, setAnalysis] = useState<string>("");
@@ -45,12 +48,34 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
-      <div className="container mx-auto px-4">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Header with Navigation */}
+      <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center space-x-3">
+              <span className="text-2xl">🏇</span>
+              <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+                Helio-Hoof
+              </h1>
+            </div>
+            <div className="flex items-center space-x-4">
+              <Link href="/history">
+                <Button variant="outline" size="sm">
+                  View History
+                </Button>
+              </Link>
+              <UserNav />
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div className="container mx-auto px-4 py-8">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
-            🏇 Helio-Hoof Show Jumping Analyzer
-          </h1>
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+            Show Jumping Analyzer
+          </h2>
           <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
             Upload single or multiple show jumping images for expert equestrian
             analysis. Get detailed feedback on rider technique, horse
@@ -77,7 +102,11 @@ export default function Home() {
               onReset={handleReset}
             />
           ) : (
-            <EquestrianAnalysis analysis={analysis} onReset={handleReset} />
+            <EquestrianAnalysis
+              analysis={analysis}
+              onReset={handleReset}
+              uploadedImages={uploadedImages}
+            />
           )
         ) : (
           <ImageUpload onAnalysis={handleAnalysis} onError={handleError} />

@@ -90,10 +90,18 @@ function AnalysisSection({
   );
 }
 
+interface MultiImageAnalysisProps {
+  analysis: string;
+  uploadedImages: UploadedImage[];
+  onReset: () => void;
+  showResetButton?: boolean;
+}
+
 export function MultiImageAnalysis({
   analysis,
   uploadedImages,
   onReset,
+  showResetButton = true,
 }: MultiImageAnalysisProps) {
   const [copied, setCopied] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -105,13 +113,47 @@ export function MultiImageAnalysis({
   // Parse JSON from analysis on component mount
   React.useEffect(() => {
     try {
-      // Try to extract JSON from the analysis text
-      const jsonMatch = analysis.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const jsonStr = jsonMatch[0];
-        const parsed = JSON.parse(jsonStr) as MultiImageAnalysisData;
-        setParsedData(parsed);
-        setParseError("");
+      // Try multiple strategies to extract JSON from the analysis text
+      let parsed: any = null;
+      let jsonStr = "";
+
+      // Strategy 1: Try parsing the entire response as JSON (for clean responses)
+      try {
+        parsed = JSON.parse(analysis);
+        jsonStr = analysis;
+      } catch {
+        // Strategy 2: Extract JSON from text using regex
+        const jsonMatch = analysis.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          jsonStr = jsonMatch[0];
+          parsed = JSON.parse(jsonStr);
+        } else {
+          // Strategy 3: Look for JSON between code blocks or markers
+          const codeBlockMatch = analysis.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/i);
+          if (codeBlockMatch) {
+            jsonStr = codeBlockMatch[1];
+            parsed = JSON.parse(jsonStr);
+          }
+        }
+      }
+
+      if (parsed && typeof parsed === "object") {
+        // Debug logging to understand the structure
+        console.log("Multi-image: Successfully parsed JSON data:", parsed);
+        console.log("Multi-image: Data keys:", Object.keys(parsed));
+
+        // Validate that the parsed data has the expected structure
+        if (
+          Array.isArray(parsed.individual_analyses) &&
+          parsed.individual_analyses.length > 0 &&
+          parsed.comparative_analysis &&
+          typeof parsed.comparative_analysis === "object"
+        ) {
+          setParsedData(parsed);
+          setParseError("");
+        } else {
+          setParseError("Multi-image analysis data structure is incomplete or invalid");
+        }
       } else {
         setParseError("Could not find JSON data in analysis response");
       }
@@ -195,9 +237,11 @@ export function MultiImageAnalysis({
                   </>
                 )}
               </Button>
-              <Button variant="outline" size="sm" onClick={onReset}>
-                Analyze More Images
-              </Button>
+              {showResetButton && (
+                <Button variant="outline" size="sm" onClick={onReset}>
+                  Analyze More Images
+                </Button>
+              )}
             </div>
           </CardHeader>
           <CardContent>
@@ -262,9 +306,11 @@ export function MultiImageAnalysis({
                 </>
               )}
             </Button>
-            <Button variant="outline" size="sm" onClick={onReset}>
-              Analyze More Images
-            </Button>
+            {showResetButton && (
+              <Button variant="outline" size="sm" onClick={onReset}>
+                Analyze More Images
+              </Button>
+            )}
           </div>
         </CardHeader>
       </Card>
