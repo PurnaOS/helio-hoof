@@ -19,8 +19,9 @@ export const analysisHistory = pgTable("analysis_history", {
     filename: string;
     size: number;
     type: string;
+    base64Data?: string; // Base64 encoded image data for reconstruction
     url?: string; // Optional - for future image storage
-  }[]>().notNull(), // Metadata about uploaded images
+  }[]>().notNull(), // Metadata and data about uploaded images
   metadata: jsonb("metadata").$type<{
     processingTime?: number;
     model?: string;

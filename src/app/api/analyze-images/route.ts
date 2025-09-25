@@ -60,6 +60,7 @@ export async function POST(request: NextRequest) {
         filename: img.filename || `image-${index + 1}`,
         size: img.size || 0,
         type: img.mimeType,
+        base64Data: img.base64, // Save the base64 data for history reconstruction
       }));
 
       await db.insert(schema.analysisHistory).values({

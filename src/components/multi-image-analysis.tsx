@@ -77,15 +77,66 @@ function AnalysisSection({
   icon: React.ElementType;
   children: React.ReactNode;
 }) {
+  // Different gradient colors for different sections
+  const getGradientColors = (title: string) => {
+    if (title.includes('Comparative')) {
+      return {
+        bg: 'from-cyan-50 to-blue-50 dark:from-cyan-950 dark:to-blue-950',
+        border: 'border-cyan-200 dark:border-cyan-800',
+        iconBg: 'from-cyan-500 to-blue-500',
+        textColor: 'text-cyan-600 dark:text-cyan-400'
+      };
+    } else if (title.includes('Priority') || title.includes('Focus')) {
+      return {
+        bg: 'from-orange-50 to-red-50 dark:from-orange-950 dark:to-red-950',
+        border: 'border-orange-200 dark:border-orange-800',
+        iconBg: 'from-orange-500 to-red-500',
+        textColor: 'text-orange-600 dark:text-orange-400'
+      };
+    } else if (title.includes('Partnership')) {
+      return {
+        bg: 'from-purple-50 to-violet-50 dark:from-purple-950 dark:to-violet-950',
+        border: 'border-purple-200 dark:border-purple-800',
+        iconBg: 'from-purple-500 to-violet-500',
+        textColor: 'text-purple-600 dark:text-purple-400'
+      };
+    } else if (title.includes('Safety')) {
+      return {
+        bg: 'from-red-50 to-rose-50 dark:from-red-950 dark:to-rose-950',
+        border: 'border-red-200 dark:border-red-800',
+        iconBg: 'from-red-500 to-rose-500',
+        textColor: 'text-red-600 dark:text-red-400'
+      };
+    }
+    // Default
+    return {
+      bg: 'from-emerald-50 to-teal-50 dark:from-emerald-950 dark:to-teal-950',
+      border: 'border-emerald-200 dark:border-emerald-800',
+      iconBg: 'from-emerald-500 to-teal-500',
+      textColor: 'text-emerald-600 dark:text-emerald-400'
+    };
+  };
+
+  const colors = getGradientColors(title);
+
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <Icon className="h-5 w-5" />
-          {title}
+    <Card className={`bg-gradient-to-br ${colors.bg} ${colors.border} shadow-lg`}>
+      <CardHeader className="pb-4">
+        <CardTitle className="flex items-center gap-3 text-lg">
+          <div className={`w-9 h-9 bg-gradient-to-r ${colors.iconBg} rounded-lg flex items-center justify-center shadow-md`}>
+            <Icon className="h-4 w-4 text-white" />
+          </div>
+          <div>
+            <span className="font-bold text-gray-800 dark:text-gray-200">{title}</span>
+            <div className={`h-1 w-16 bg-gradient-to-r ${colors.iconBg} rounded-full mt-1`}></div>
+          </div>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">{children}</CardContent>
+      <CardContent className="space-y-4">
+        <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-4 shadow-sm border border-white/50 dark:border-gray-700/50">
+          {children}
+        </div>
+      </CardContent>
     </Card>
   );
 }
@@ -266,27 +317,37 @@ export function MultiImageAnalysis({
   return (
     <div className="w-full max-w-7xl mx-auto space-y-6">
       {/* Header */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <CardTitle className="text-2xl font-bold">
-            🏇 Multi-Image Equestrian Analysis Results
-          </CardTitle>
-          <div className="flex gap-2">
+      <Card className="bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-950 dark:to-purple-950 border-violet-200 dark:border-violet-800 shadow-lg">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-gradient-to-r from-violet-600 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
+              <span className="text-2xl">🏇</span>
+            </div>
+            <div>
+              <CardTitle className="text-2xl font-bold bg-gradient-to-r from-violet-700 to-purple-700 dark:from-violet-400 dark:to-purple-400 bg-clip-text text-transparent">
+                Multi-Image Analysis Results
+              </CardTitle>
+              <p className="text-sm text-violet-600 dark:text-violet-400 mt-1">
+                Comprehensive analysis across multiple images
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-3">
             <Button
               variant="outline"
               size="sm"
               onClick={copyToClipboard}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 bg-white/80 dark:bg-gray-800/80 border-violet-200 dark:border-violet-700 hover:bg-violet-50 dark:hover:bg-violet-900/50 transition-all duration-200 shadow-sm"
             >
               {copied ? (
                 <>
                   <CheckCircle2 className="h-4 w-4 text-green-600" />
-                  Copied!
+                  <span className="font-medium">Copied!</span>
                 </>
               ) : (
                 <>
-                  <Copy className="h-4 w-4" />
-                  Copy Raw Data
+                  <Copy className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+                  <span className="font-medium">Copy Data</span>
                 </>
               )}
             </Button>
@@ -295,20 +356,28 @@ export function MultiImageAnalysis({
               size="sm"
               onClick={handleExportPDF}
               disabled={isExporting}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 bg-white/80 dark:bg-gray-800/80 border-purple-200 dark:border-purple-700 hover:bg-purple-50 dark:hover:bg-purple-900/50 transition-all duration-200 shadow-sm"
             >
               {isExporting ? (
-                "Generating PDF..."
+                <>
+                  <div className="w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" />
+                  <span className="font-medium">Generating...</span>
+                </>
               ) : (
                 <>
-                  <Download className="h-4 w-4" />
-                  Download PDF
+                  <Download className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                  <span className="font-medium">Export PDF</span>
                 </>
               )}
             </Button>
             {showResetButton && (
-              <Button variant="outline" size="sm" onClick={onReset}>
-                Analyze More Images
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onReset}
+                className="bg-white/80 dark:bg-gray-800/80 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200 shadow-sm font-medium"
+              >
+                New Analysis
               </Button>
             )}
           </div>
@@ -331,27 +400,43 @@ export function MultiImageAnalysis({
                 const correspondingImage =
                   uploadedImages[imageAnalysis.image_number - 1];
                 return (
-                  <Card key={imageAnalysis.image_number} className="border-2">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-lg">
-                        Image {imageAnalysis.image_number}
+                  <Card
+                    key={imageAnalysis.image_number}
+                    className="bg-gradient-to-br from-slate-50 to-gray-100 dark:from-slate-900 dark:to-gray-800 border-slate-200 dark:border-slate-700 shadow-lg hover:shadow-xl transition-all duration-300"
+                  >
+                    <CardHeader className="pb-4">
+                      <CardTitle className="flex items-center gap-3 text-lg">
+                        <div className="w-8 h-8 bg-gradient-to-r from-slate-600 to-gray-600 rounded-lg flex items-center justify-center shadow-sm">
+                          <span className="text-white font-bold text-sm">{imageAnalysis.image_number}</span>
+                        </div>
+                        <div>
+                          <span className="font-bold text-gray-800 dark:text-gray-200">Image {imageAnalysis.image_number}</span>
+                          <div className="h-1 w-12 bg-gradient-to-r from-slate-600 to-gray-600 rounded-full mt-1"></div>
+                        </div>
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       {/* Display the uploaded image */}
                       {correspondingImage && (
                         <div className="relative">
-                          <Image
-                            src={correspondingImage.previewUrl}
-                            alt={`Analysis image ${imageAnalysis.image_number}`}
-                            className="w-full h-auto object-contain rounded-lg bg-gray-50 dark:bg-gray-900 max-h-96"
-                            width={400}
-                            height={300}
-                            style={{ aspectRatio: "auto" }}
-                          />
-                          <div className="absolute bottom-2 left-2 right-2">
-                            <div className="bg-black/70 text-white text-xs px-2 py-1 rounded truncate">
-                              {correspondingImage.file.name}
+                          <div className="relative rounded-xl overflow-hidden shadow-lg bg-white dark:bg-gray-800 p-2">
+                            <Image
+                              src={correspondingImage.previewUrl}
+                              alt={`Analysis image ${imageAnalysis.image_number}`}
+                              className="w-full h-auto object-contain rounded-lg max-h-64"
+                              width={400}
+                              height={300}
+                              style={{ aspectRatio: "auto" }}
+                            />
+                            <div className="absolute top-2 right-2">
+                              <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm px-2 py-1 rounded-full shadow-sm">
+                                <span className="text-xs font-medium text-gray-700 dark:text-gray-300">#{imageAnalysis.image_number}</span>
+                              </div>
+                            </div>
+                            <div className="absolute bottom-2 left-2 right-2">
+                              <div className="bg-black/80 backdrop-blur-sm text-white text-xs px-3 py-1 rounded-full truncate">
+                                {correspondingImage.file.name}
+                              </div>
                             </div>
                           </div>
                         </div>

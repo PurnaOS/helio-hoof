@@ -3,10 +3,10 @@
 import { useState, useEffect, use } from "react";
 import { useUser } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, ArrowLeft } from "lucide-react";
-import { EquestrianAnalysis } from "@/components/equestrian-analysis";
-import { MultiImageAnalysis } from "@/components/multi-image-analysis";
+import { AnalysisReport } from "@/components/analysis-report";
+import { UploadedImage } from "@/components/image-upload";
 import Link from "next/link";
 import { AnalysisHistory } from "@/lib/db/schema";
 
@@ -50,21 +50,6 @@ export default function AnalysisDetailPage({ params }: AnalysisDetailPageProps) 
   };
 
 
-  const isMultiImageAnalysis = (analysisText: string): boolean => {
-    try {
-      const jsonMatch = analysisText.match(/\\{[\\s\\S]*\\}/);
-      if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
-        return (
-          !!parsed.individual_analyses &&
-          Array.isArray(parsed.individual_analyses)
-        );
-      }
-    } catch {
-      // If parsing fails, assume single image
-    }
-    return false;
-  };
 
   if (!isLoaded) {
     return (
@@ -121,18 +106,22 @@ export default function AnalysisDetailPage({ params }: AnalysisDetailPageProps) 
     );
   }
 
-  // Create mock uploaded images from the analysis data
-  const mockUploadedImages = analysis.images.map((img, index) => ({
-    id: img.id,
-    file: new File([], img.filename, { type: img.type }),
-    previewUrl: "", // No preview URL for historical data
-  }));
+  // Reconstruct UploadedImage objects from stored data for consistent component usage
+  const reconstructedImages: UploadedImage[] = analysis.images.map((img, index) => {
+    // Create a data URL from base64 if available
+    const previewUrl = img.base64Data
+      ? `data:${img.type};base64,${img.base64Data}`
+      : '';
 
-  // For single image analysis, create a minimal structure that won't display the image
-  // since we don't have preview URLs for historical data
-  const singleImageMock = analysis.analysisType === "single" && analysis.images.length > 0
-    ? [] // Empty array so image won't display in history
-    : [];
+    // Create a File object from the stored data (for component compatibility)
+    const file = new File([], img.filename, { type: img.type });
+
+    return {
+      id: img.id || `image-${index}`,
+      file: file,
+      previewUrl: previewUrl
+    };
+  });
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -144,24 +133,15 @@ export default function AnalysisDetailPage({ params }: AnalysisDetailPageProps) 
         </Link>
       </div>
 
-      {/* Main content area - identical to analysis results page */}
+      {/* Main content area - using same components as main analysis page */}
       <div className="container mx-auto px-4 py-8">
-        {/* Render the analysis using existing components - exactly like main page */}
-        {isMultiImageAnalysis(analysis.analysisResult) ? (
-          <MultiImageAnalysis
-            analysis={analysis.analysisResult}
-            uploadedImages={mockUploadedImages}
-            onReset={() => window.location.href = '/'}
-            showResetButton={true}
-          />
-        ) : (
-          <EquestrianAnalysis
-            analysis={analysis.analysisResult}
-            onReset={() => window.location.href = '/'}
-            showResetButton={true}
-            uploadedImages={singleImageMock}
-          />
-        )}
+        {/* Render the analysis using the unified AnalysisReport component */}
+        <AnalysisReport
+          analysis={analysis.analysisResult}
+          uploadedImages={reconstructedImages}
+          onReset={() => window.location.href = '/'}
+          showResetButton={true}
+        />
       </div>
     </div>
   );

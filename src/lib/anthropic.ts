@@ -74,7 +74,7 @@ Be specific, constructive, and use proper equestrian terminology. Focus on actio
   try {
 
     const message = await anthropic.messages.create({
-      model: "claude-3-5-sonnet-20240620",
+      model: "claude-sonnet-4-20250514",
       max_tokens: 1000,
       messages: [
         {
@@ -188,7 +188,7 @@ Provide your response in this exact JSON format:
 Be specific, constructive, and use proper equestrian terminology. Focus on actionable feedback.`;
 
     const message = await anthropic.messages.create({
-      model: "claude-3-5-sonnet-20240620",
+      model: "claude-sonnet-4-20250514",
       max_tokens: 1500,
       messages: [
         {

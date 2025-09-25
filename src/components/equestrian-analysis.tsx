@@ -68,15 +68,66 @@ function AnalysisSection({
   icon: React.ElementType;
   children: React.ReactNode;
 }) {
+  // Different gradient colors for different sections
+  const getGradientColors = (title: string) => {
+    if (title.includes('Rider')) {
+      return {
+        bg: 'from-rose-50 to-pink-50 dark:from-rose-950 dark:to-pink-950',
+        border: 'border-rose-200 dark:border-rose-800',
+        iconBg: 'from-rose-500 to-pink-500',
+        textColor: 'text-rose-600 dark:text-rose-400'
+      };
+    } else if (title.includes('Horse')) {
+      return {
+        bg: 'from-amber-50 to-orange-50 dark:from-amber-950 dark:to-orange-950',
+        border: 'border-amber-200 dark:border-amber-800',
+        iconBg: 'from-amber-500 to-orange-500',
+        textColor: 'text-amber-600 dark:text-amber-400'
+      };
+    } else if (title.includes('Partnership')) {
+      return {
+        bg: 'from-purple-50 to-violet-50 dark:from-purple-950 dark:to-violet-950',
+        border: 'border-purple-200 dark:border-purple-800',
+        iconBg: 'from-purple-500 to-violet-500',
+        textColor: 'text-purple-600 dark:text-purple-400'
+      };
+    } else if (title.includes('Safety')) {
+      return {
+        bg: 'from-red-50 to-rose-50 dark:from-red-950 dark:to-rose-950',
+        border: 'border-red-200 dark:border-red-800',
+        iconBg: 'from-red-500 to-rose-500',
+        textColor: 'text-red-600 dark:text-red-400'
+      };
+    }
+    // Default
+    return {
+      bg: 'from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950',
+      border: 'border-blue-200 dark:border-blue-800',
+      iconBg: 'from-blue-500 to-indigo-500',
+      textColor: 'text-blue-600 dark:text-blue-400'
+    };
+  };
+
+  const colors = getGradientColors(title);
+
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <Icon className="h-5 w-5" />
-          {title}
+    <Card className={`bg-gradient-to-br ${colors.bg} ${colors.border} shadow-lg`}>
+      <CardHeader className="pb-4">
+        <CardTitle className="flex items-center gap-3 text-lg">
+          <div className={`w-9 h-9 bg-gradient-to-r ${colors.iconBg} rounded-lg flex items-center justify-center shadow-md`}>
+            <Icon className="h-4 w-4 text-white" />
+          </div>
+          <div>
+            <span className="font-bold text-gray-800 dark:text-gray-200">{title}</span>
+            <div className={`h-1 w-16 bg-gradient-to-r ${colors.iconBg} rounded-full mt-1`}></div>
+          </div>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">{children}</CardContent>
+      <CardContent className="space-y-4">
+        <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-4 shadow-sm border border-white/50 dark:border-gray-700/50">
+          {children}
+        </div>
+      </CardContent>
     </Card>
   );
 }
@@ -295,27 +346,37 @@ export function EquestrianAnalysis({
   return (
     <div className="w-full max-w-6xl mx-auto space-y-6">
       {/* Header */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <CardTitle className="text-2xl font-bold">
-            🏇 Equestrian Analysis Results
-          </CardTitle>
-          <div className="flex gap-2">
+      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 border-blue-200 dark:border-blue-800 shadow-lg">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-md">
+              <span className="text-2xl">🏇</span>
+            </div>
+            <div>
+              <CardTitle className="text-2xl font-bold bg-gradient-to-r from-blue-700 to-indigo-700 dark:from-blue-400 dark:to-indigo-400 bg-clip-text text-transparent">
+                Equestrian Analysis Results
+              </CardTitle>
+              <p className="text-sm text-blue-600 dark:text-blue-400 mt-1">
+                Comprehensive riding and horse performance analysis
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-3">
             <Button
               variant="outline"
               size="sm"
               onClick={copyToClipboard}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 bg-white/80 dark:bg-gray-800/80 border-blue-200 dark:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/50 transition-all duration-200 shadow-sm"
             >
               {copied ? (
                 <>
                   <CheckCircle2 className="h-4 w-4 text-green-600" />
-                  Copied!
+                  <span className="font-medium">Copied!</span>
                 </>
               ) : (
                 <>
-                  <Copy className="h-4 w-4" />
-                  Copy Raw Data
+                  <Copy className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  <span className="font-medium">Copy Data</span>
                 </>
               )}
             </Button>
@@ -324,20 +385,28 @@ export function EquestrianAnalysis({
               size="sm"
               onClick={handleExportPDF}
               disabled={isExporting}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 bg-white/80 dark:bg-gray-800/80 border-indigo-200 dark:border-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/50 transition-all duration-200 shadow-sm"
             >
               {isExporting ? (
-                "Generating PDF..."
+                <>
+                  <div className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                  <span className="font-medium">Generating...</span>
+                </>
               ) : (
                 <>
-                  <Download className="h-4 w-4" />
-                  Download PDF
+                  <Download className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                  <span className="font-medium">Export PDF</span>
                 </>
               )}
             </Button>
             {showResetButton && (
-              <Button variant="outline" size="sm" onClick={onReset}>
-                Analyze Another Image
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onReset}
+                className="bg-white/80 dark:bg-gray-800/80 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200 shadow-sm font-medium"
+              >
+                New Analysis
               </Button>
             )}
           </div>
@@ -348,27 +417,39 @@ export function EquestrianAnalysis({
       <div id="single-analysis-content">
         {/* Image Display */}
         {uploadedImages && uploadedImages.length > 0 && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ImageIcon className="h-5 w-5" />
-                Analyzed Image
+          <Card className="mb-6 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 border-gray-200 dark:border-gray-700 shadow-lg">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center shadow-sm">
+                  <ImageIcon className="h-4 w-4 text-white" />
+                </div>
+                <span className="text-lg font-semibold text-gray-800 dark:text-gray-200">Analyzed Image</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="relative w-full max-w-2xl mx-auto">
-                <Image
-                  src={uploadedImages[0].previewUrl}
-                  alt="Analyzed equestrian image"
-                  width={800}
-                  height={600}
-                  className="w-full h-auto rounded-lg shadow-md object-contain"
-                  style={{ maxHeight: '500px' }}
-                />
-                <div className="mt-3 text-center">
-                  <div className="inline-flex items-center px-3 py-1 rounded-full text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
-                    <ImageIcon className="h-3 w-3 mr-1" />
-                    {uploadedImages[0].file.name} ({(uploadedImages[0].file.size / 1024).toFixed(1)} KB)
+                <div className="relative rounded-xl overflow-hidden shadow-xl bg-white dark:bg-gray-800 p-2">
+                  <Image
+                    src={uploadedImages[0].previewUrl}
+                    alt="Analyzed equestrian image"
+                    width={800}
+                    height={600}
+                    className="w-full h-auto rounded-lg object-contain"
+                    style={{ maxHeight: '500px' }}
+                  />
+                  <div className="absolute top-4 right-4">
+                    <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm px-3 py-1 rounded-full shadow-md">
+                      <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Original</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-4 text-center">
+                  <div className="inline-flex items-center px-4 py-2 rounded-full bg-white dark:bg-gray-800 shadow-md border border-gray-200 dark:border-gray-700">
+                    <ImageIcon className="h-4 w-4 mr-2 text-purple-500" />
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{uploadedImages[0].file.name}</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
+                      ({(uploadedImages[0].file.size / 1024).toFixed(1)} KB)
+                    </span>
                   </div>
                 </div>
               </div>
@@ -377,23 +458,32 @@ export function EquestrianAnalysis({
         )}
 
         {/* Scores Overview */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Star className="h-5 w-5" />
-              Performance Scores
+        <Card className="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950 dark:to-teal-950 border-emerald-200 dark:border-emerald-800 shadow-lg">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center shadow-md">
+                <Star className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <span className="text-xl font-bold text-gray-800 dark:text-gray-200">Performance Scores</span>
+                <p className="text-sm text-emerald-600 dark:text-emerald-400 mt-1">Overall assessment ratings</p>
+              </div>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <ScoreDisplay
-                score={parsedData.rider_analysis.overall_score}
-                label="Rider Performance"
-              />
-              <ScoreDisplay
-                score={parsedData.horse_analysis.overall_score}
-                label="Horse Performance"
-              />
+              <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-xl p-6 shadow-md border border-white/50 dark:border-gray-700/50">
+                <ScoreDisplay
+                  score={parsedData.rider_analysis.overall_score}
+                  label="Rider Performance"
+                />
+              </div>
+              <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-xl p-6 shadow-md border border-white/50 dark:border-gray-700/50">
+                <ScoreDisplay
+                  score={parsedData.horse_analysis.overall_score}
+                  label="Horse Performance"
+                />
+              </div>
             </div>
           </CardContent>
         </Card>

@@ -192,7 +192,7 @@ export function ImageUpload({ onAnalysis, onError }: ImageUploadProps) {
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto space-y-4">
+    <div className="w-full max-w-4xl mx-auto space-y-4" data-testid="image-upload">
       {/* Upload Area */}
       <Card>
         <CardContent className="p-6">

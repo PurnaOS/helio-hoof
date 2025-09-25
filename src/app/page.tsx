@@ -2,9 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { EquestrianAnalysis } from "@/components/equestrian-analysis";
+import { AnalysisReport } from "@/components/analysis-report";
 import { ImageUpload, type UploadedImage } from "@/components/image-upload";
-import { MultiImageAnalysis } from "@/components/multi-image-analysis";
 import { UserNav } from "@/components/auth/user-nav";
 import { Button } from "@/components/ui/button";
 
@@ -30,22 +29,6 @@ export default function Home() {
     setError("");
   };
 
-  // Determine if this is a multi-image analysis based on JSON structure
-  const isMultiImageAnalysis = (analysisText: string): boolean => {
-    try {
-      const jsonMatch = analysisText.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
-        return (
-          !!parsed.individual_analyses &&
-          Array.isArray(parsed.individual_analyses)
-        );
-      }
-    } catch {
-      // If parsing fails, assume single image
-    }
-    return false;
-  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -95,19 +78,11 @@ export default function Home() {
         )}
 
         {analysis ? (
-          isMultiImageAnalysis(analysis) ? (
-            <MultiImageAnalysis
-              analysis={analysis}
-              uploadedImages={uploadedImages}
-              onReset={handleReset}
-            />
-          ) : (
-            <EquestrianAnalysis
-              analysis={analysis}
-              onReset={handleReset}
-              uploadedImages={uploadedImages}
-            />
-          )
+          <AnalysisReport
+            analysis={analysis}
+            uploadedImages={uploadedImages}
+            onReset={handleReset}
+          />
         ) : (
           <ImageUpload onAnalysis={handleAnalysis} onError={handleError} />
         )}
