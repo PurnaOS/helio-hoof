@@ -10,11 +10,40 @@ test.describe('Image Analysis API', () => {
     // Navigate to the application
     await page.goto('/');
 
-    // Check if we need to sign in (this might need adjustment based on your auth setup)
-    const signInButton = page.getByText('Sign in').first();
+    // Check if we need to sign in
+    const signInButton = page.getByText('Sign In').first();
     if (await signInButton.isVisible()) {
-      // Skip auth for now - you may need to implement proper auth setup
-      console.log('Authentication required - skipping for now');
+      console.log('Performing authentication...');
+
+      // Click sign in
+      await signInButton.click();
+
+      // Wait for sign in page to load
+      await page.waitForURL('**/sign-in**');
+
+      // Fill in email
+      const emailInput = page.locator('input[type="email"]').first();
+      if (await emailInput.isVisible()) {
+        await emailInput.fill('srinivasarajui@gmail.com');
+
+        // Fill in password
+        const passwordInput = page.locator('input[type="password"]').first();
+        if (await passwordInput.isVisible()) {
+          await passwordInput.fill('Srithejas+Saurya=1');
+
+          // Click submit button
+          const submitButton = page.getByRole('button', { name: 'Sign in' }).or(page.getByRole('button', { name: 'Continue' })).first();
+          if (await submitButton.isVisible()) {
+            await submitButton.click();
+
+            // Wait for redirect back to main page
+            await page.waitForURL('/');
+            console.log('Authentication successful');
+          }
+        }
+      }
+    } else {
+      console.log('User already authenticated or auth not required');
     }
   });
 

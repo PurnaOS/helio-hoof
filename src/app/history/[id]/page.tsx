@@ -119,7 +119,10 @@ export default function AnalysisDetailPage({ params }: AnalysisDetailPageProps) 
     return {
       id: img.id || `image-${index}`,
       file: file,
-      previewUrl: previewUrl
+      previewUrl: previewUrl,
+      base64: img.base64Data,
+      mimeType: img.type,
+      filename: img.filename
     };
   });
 
