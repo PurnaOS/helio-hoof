@@ -16,7 +16,8 @@ import React, { useState } from "react";
 import type { UploadedImage } from "@/components/image-upload";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { exportToPDF } from "@/lib/pdf-export";
+import { exportToEnhancedPDF } from "@/lib/enhanced-pdf-export";
+import { convertToBase64 } from "@/lib/utils";
 
 interface IndividualAnalysis {
   image_number: number;
@@ -227,11 +228,40 @@ export function MultiImageAnalysis({
   const handleExportPDF = async () => {
     setIsExporting(true);
     try {
-      await exportToPDF({
-        elementId: "multi-analysis-content",
+      // Prepare images for PDF - ensure we have base64 data
+      const pdfImages = [];
+      for (const img of uploadedImages) {
+        let base64 = img.base64;
+        if (!base64 && img.file) {
+          // Convert to base64 if not already available
+          console.log('Converting file to base64:', img.file?.name);
+          base64 = await convertToBase64(img.file);
+        }
+
+        console.log('Image data for PDF:', {
+          filename: img.filename || img.file?.name,
+          mimeType: img.mimeType || img.file?.type,
+          base64Length: base64?.length || 0,
+          hasBase64: !!base64,
+          hasDataPrefix: base64?.startsWith('data:') || false
+        });
+
+        if (base64) {
+          pdfImages.push({
+            base64,
+            filename: img.filename || img.file?.name,
+            mimeType: img.mimeType || img.file?.type
+          });
+        }
+      }
+
+      await exportToEnhancedPDF({
         title: "Equestrian Analysis Report",
         subtitle: `Multi-Image Analysis Results (${uploadedImages.length} Images)`,
         filename: "equestrian-multi-image-analysis",
+        analysis: parsedData,
+        images: pdfImages,
+        isMultiImage: true
       });
     } catch (error) {
       console.error("Failed to export PDF:", error);

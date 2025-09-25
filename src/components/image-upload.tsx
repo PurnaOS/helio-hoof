@@ -19,6 +19,9 @@ export interface UploadedImage {
   file: File;
   previewUrl: string;
   id: string;
+  base64?: string;
+  mimeType?: string;
+  filename?: string;
 }
 
 export function ImageUpload({ onAnalysis, onError }: ImageUploadProps) {
@@ -27,7 +30,7 @@ export function ImageUpload({ onAnalysis, onError }: ImageUploadProps) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const onDrop = useCallback(
-    (acceptedFiles: File[]) => {
+    async (acceptedFiles: File[]) => {
       const newImages: UploadedImage[] = [];
 
       for (const file of acceptedFiles) {
@@ -38,11 +41,26 @@ export function ImageUpload({ onAnalysis, onError }: ImageUploadProps) {
         }
 
         const url = URL.createObjectURL(file);
-        newImages.push({
-          file,
-          previewUrl: url,
-          id: `${file.name}-${Date.now()}-${Math.random()}`,
-        });
+        try {
+          const base64 = await convertToBase64(file);
+          newImages.push({
+            file,
+            previewUrl: url,
+            id: `${file.name}-${Date.now()}-${Math.random()}`,
+            base64,
+            mimeType: file.type,
+            filename: file.name,
+          });
+        } catch (error) {
+          console.error('Error converting image to base64:', error);
+          newImages.push({
+            file,
+            previewUrl: url,
+            id: `${file.name}-${Date.now()}-${Math.random()}`,
+            mimeType: file.type,
+            filename: file.name,
+          });
+        }
       }
 
       setUploadedImages((prev) => [...prev, ...newImages]);

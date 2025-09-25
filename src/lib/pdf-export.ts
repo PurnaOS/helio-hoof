@@ -433,8 +433,8 @@ export async function exportToPDF({
       throw new Error("Failed to create canvas - invalid dimensions");
     }
 
-    // Calculate dimensions
-    const imgWidth = 210; // A4 width in mm
+    // Calculate dimensions - preserve original aspect ratio
+    const imgWidth = 190; // A4 width minus margins (210 - 20)
     const pageHeight = 297; // A4 height in mm
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
@@ -443,22 +443,26 @@ export async function exportToPDF({
     // Create PDF
     const pdf = new jsPDF("p", "mm", "a4");
 
-    // Add header
-    pdf.setFontSize(20);
+    // Add header with better typography
+    pdf.setFontSize(22);
     pdf.setFont("helvetica", "bold");
     pdf.text(title, 105, 20, { align: "center" });
 
     if (subtitle) {
-      pdf.setFontSize(12);
+      pdf.setFontSize(14);
       pdf.setFont("helvetica", "normal");
-      pdf.text(subtitle, 105, 30, { align: "center" });
+      pdf.text(subtitle, 105, 28, { align: "center" });
     }
 
-    // Add timestamp
+    // Add a subtle line under header
+    pdf.setLineWidth(0.5);
+    pdf.line(20, 35, 190, 35);
+
+    // Add timestamp with better formatting
     const timestamp = new Date().toLocaleString();
     pdf.setFontSize(10);
     pdf.setFont("helvetica", "normal");
-    pdf.text(`Generated on: ${timestamp}`, 105, 40, { align: "center" });
+    pdf.text(`Generated on: ${timestamp}`, 105, 42, { align: "center" });
 
     console.log("Converting canvas to image data...");
 
@@ -470,39 +474,103 @@ export async function exportToPDF({
     }
 
     let heightLeft = imgHeight;
-    let position = 50; // Start below header
+    let position = 55; // Start below improved header with more spacing
 
-    console.log("Adding content to PDF...");
+    console.log("Adding content to PDF with proper page breaks...");
 
-    // Add first page
-    if (heightLeft > pageHeight - position) {
-      // Content is larger than one page
-      const pageImgHeight = pageHeight - position;
-      pdf.addImage(imgData, "PNG", 0, position, imgWidth, pageImgHeight);
-      heightLeft -= pageImgHeight;
+    // Calculate maximum content height per page (accounting for header and footer)
+    const maxContentHeight = pageHeight - position - 25; // 25mm for footer space
+    const xMargin = 10; // 10mm left margin
 
-      // Add additional pages if needed
-      while (heightLeft > 0) {
-        pdf.addPage();
-        position = heightLeft - pageHeight > 0 ? -pageHeight : -heightLeft;
-        pdf.addImage(imgData, "PNG", 0, position, imgWidth, pageHeight);
-        heightLeft -= pageHeight;
+    // Convert canvas to multiple page images if needed
+    if (imgHeight > maxContentHeight) {
+      console.log(`Content height ${imgHeight}mm exceeds page limit ${maxContentHeight}mm - creating multiple pages`);
+
+      // Create pages by slicing the canvas
+      let remainingHeight = imgHeight;
+      let canvasYOffset = 0;
+      let pageNumber = 0;
+
+      while (remainingHeight > 0) {
+        if (pageNumber > 0) {
+          pdf.addPage();
+
+          // Add header to continuation pages
+          pdf.setFontSize(16);
+          pdf.setFont("helvetica", "bold");
+          pdf.text(`${title} (continued)`, 105, 20, { align: "center" });
+
+          if (subtitle) {
+            pdf.setFontSize(12);
+            pdf.setFont("helvetica", "normal");
+            pdf.text(subtitle, 105, 28, { align: "center" });
+          }
+
+          // Add line under header
+          pdf.setLineWidth(0.3);
+          pdf.line(20, 35, 190, 35);
+        }
+
+        // Calculate content height for this page (first page has larger header)
+        const thisPageMaxHeight = pageNumber === 0 ? maxContentHeight : (pageHeight - 45 - 25); // 45mm for continuation header, 25mm for footer
+        const pageContentHeight = Math.min(remainingHeight, thisPageMaxHeight);
+
+        // Calculate the portion of the canvas to use for this page
+        const canvasSliceHeight = (pageContentHeight / imgHeight) * canvas.height;
+
+        // Create a new canvas with just the slice we need for this page
+        const tempCanvas = document.createElement('canvas');
+        const tempCtx = tempCanvas.getContext('2d');
+
+        if (tempCtx) {
+          tempCanvas.width = canvas.width;
+          tempCanvas.height = canvasSliceHeight;
+
+          // Draw the slice from the original canvas
+          tempCtx.drawImage(
+            canvas,
+            0, canvasYOffset,           // Source x, y
+            canvas.width, canvasSliceHeight,  // Source width, height
+            0, 0,                       // Destination x, y
+            canvas.width, canvasSliceHeight   // Destination width, height
+          );
+
+          // Convert this slice to image data
+          const sliceImageData = tempCanvas.toDataURL("image/png", 0.95);
+
+          // Add the slice to the PDF page
+          const yPos = pageNumber === 0 ? position : 45; // First page uses original position, continuation pages start after their header
+          pdf.addImage(sliceImageData, "PNG", xMargin, yPos, imgWidth, pageContentHeight);
+
+          // Clean up
+          tempCanvas.remove();
+        }
+
+        remainingHeight -= pageContentHeight;
+        canvasYOffset += canvasSliceHeight;
+        pageNumber++;
       }
     } else {
-      // Content fits on one page
-      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+      // Content fits on one page - maintain original layout
+      pdf.addImage(imgData, "PNG", xMargin, position, imgWidth, imgHeight);
     }
 
-    // Add footer
+    // Add footer with better styling
     const pageCount = pdf.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
       pdf.setPage(i);
-      pdf.setFontSize(8);
+
+      // Add subtle line above footer
+      pdf.setLineWidth(0.3);
+      pdf.line(20, 283, 190, 283);
+
+      pdf.setFontSize(9);
       pdf.setFont("helvetica", "normal");
-      pdf.text("🏇 Helio-Hoof Show Jumping Analyzer", 105, 290, {
+      pdf.text("Helio-Hoof Show Jumping Analyzer", 105, 289, {
         align: "center",
       });
-      pdf.text(`Page ${i} of ${pageCount}`, 195, 290, { align: "right" });
+      pdf.setFontSize(8);
+      pdf.text(`Page ${i} of ${pageCount}`, 190, 289, { align: "right" });
     }
 
     console.log("Saving PDF...");

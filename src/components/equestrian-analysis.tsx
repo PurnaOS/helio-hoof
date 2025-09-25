@@ -14,7 +14,8 @@ import Image from "next/image";
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { exportToPDF } from "@/lib/pdf-export";
+import { exportToEnhancedPDF } from "@/lib/enhanced-pdf-export";
+import { convertToBase64 } from "@/lib/utils";
 import type { UploadedImage } from "@/components/image-upload";
 
 interface EquestrianAnalysisData {
@@ -205,11 +206,31 @@ export function EquestrianAnalysis({
   const handleExportPDF = async () => {
     setIsExporting(true);
     try {
-      await exportToPDF({
-        elementId: "single-analysis-content",
+      // Prepare images for PDF - ensure we have base64 data
+      const pdfImages = [];
+      if (uploadedImages) {
+        for (const img of uploadedImages) {
+          let base64 = img.base64;
+          if (!base64 && img.file) {
+            // Convert to base64 if not already available
+            base64 = await convertToBase64(img.file);
+          }
+          if (base64) {
+            pdfImages.push({
+              base64,
+              filename: img.filename || img.file?.name,
+              mimeType: img.mimeType || img.file?.type
+            });
+          }
+        }
+      }
+
+      await exportToEnhancedPDF({
         title: "Equestrian Analysis Report",
         subtitle: "Single Image Analysis Results",
         filename: "equestrian-single-image-analysis",
+        analysis: parsedData,
+        images: pdfImages
       });
     } catch (error) {
       console.error("Failed to export PDF:", error);
