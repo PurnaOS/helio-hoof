@@ -40,6 +40,8 @@ interface EquestrianAnalysisProps {
   onReset: () => void;
   showResetButton?: boolean;
   uploadedImages?: UploadedImage[];
+  name?: string;
+  description?: string;
 }
 
 function ScoreDisplay({ score, label }: { score: number; label: string }) {
@@ -138,6 +140,8 @@ export function EquestrianAnalysis({
   onReset,
   showResetButton = true,
   uploadedImages = [],
+  name,
+  description,
 }: EquestrianAnalysisProps) {
   const [copied, setCopied] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -151,19 +155,63 @@ export function EquestrianAnalysis({
     try {
       let parsed: any = null;
 
+      // Log the raw analysis for debugging
+      console.log("🔍 Raw analysis received:", analysis.substring(0, 300) + (analysis.length > 300 ? "..." : ""));
+
       // Try parsing entire response as JSON first
       try {
         parsed = JSON.parse(analysis);
-      } catch {
+      } catch (firstError) {
+        console.log("First JSON parse failed:", firstError);
+
         // Extract JSON from text using regex
         const jsonMatch = analysis.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
-          parsed = JSON.parse(jsonMatch[0]);
+          try {
+            console.log("Found JSON match, attempting to parse...");
+            console.log("JSON match preview:", jsonMatch[0].substring(0, 200) + "...");
+
+            // Try to clean up common JSON issues
+            let cleanJson = jsonMatch[0];
+
+            // Remove trailing commas before closing brackets/braces
+            cleanJson = cleanJson.replace(/,(\s*[}\]])/g, '$1');
+
+            // Try parsing the cleaned JSON
+            parsed = JSON.parse(cleanJson);
+          } catch (secondError) {
+            console.error("Second JSON parse failed:", secondError);
+            console.log("Raw analysis text length:", analysis.length);
+            console.log("Raw analysis preview:", analysis.substring(0, 300) + "...");
+            console.log("JSON match length:", jsonMatch[0].length);
+            console.log("JSON match preview:", jsonMatch[0].substring(0, 300) + "...");
+            setParseError(`Failed to parse analysis data: ${secondError instanceof Error ? secondError.message : 'Unknown error'}`);
+            return;
+          }
+        } else {
+          console.error("No JSON structure found in analysis text");
+          console.log("Analysis text:", analysis.substring(0, 300) + "...");
+
+          // Check if this looks like an error message
+          if (analysis.toLowerCase().includes('internal server error') ||
+              analysis.toLowerCase().includes('error') ||
+              analysis.toLowerCase().includes('failed')) {
+            setParseError("Analysis service temporarily unavailable. Please try again in a moment.");
+          } else {
+            setParseError("The analysis response could not be processed. Please try uploading your image again.");
+          }
+          return;
         }
       }
 
       if (parsed && typeof parsed === "object") {
-        // Create normalized structure with defaults
+        // Check if this is a non-show jumping image
+        if (parsed.is_show_jumping === false) {
+          setParseError(parsed.message || "This image does not contain show jumping content suitable for analysis.");
+          return;
+        }
+
+        // Create normalized structure with defaults for show jumping analysis
         const normalizedData: EquestrianAnalysisData = {
           rider_analysis: {
             overall_score: Number(parsed.rider_analysis?.overall_score || 0),
@@ -226,9 +274,9 @@ export function EquestrianAnalysis({
       }
 
       await exportToEnhancedPDF({
-        title: "Equestrian Analysis Report",
-        subtitle: "Single Image Analysis Results",
-        filename: "equestrian-single-image-analysis",
+        title: name || "Equestrian Analysis Report",
+        subtitle: description || "Single Image Analysis Results",
+        filename: name ? name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') : "equestrian-single-image-analysis",
         analysis: parsedData,
         images: pdfImages
       });
@@ -297,6 +345,7 @@ export function EquestrianAnalysis({
           </CardHeader>
         </Card>
 
+
         {/* PDF Export Content */}
         <div id="single-analysis-content">
           {/* Image Display */}
@@ -332,32 +381,57 @@ export function EquestrianAnalysis({
           {/* Analysis Content */}
           <AnalysisSection title="Analysis Results" icon={Target}>
             {parseError && (
-              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 mb-6">
+              <div className={`border rounded-lg p-4 mb-6 ${
+                parseError.includes('show jumping content') || parseError.includes('Helio-Hoof analyzer')
+                  ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
+                  : 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'
+              }`}>
                 <div className="flex items-start gap-3">
                   <div className="flex-shrink-0">
-                    <div className="w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs font-bold">!</span>
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center ${
+                      parseError.includes('show jumping content') || parseError.includes('Helio-Hoof analyzer')
+                        ? 'bg-blue-500'
+                        : 'bg-amber-500'
+                    }`}>
+                      <span className="text-white text-xs font-bold">
+                        {parseError.includes('show jumping content') || parseError.includes('Helio-Hoof analyzer') ? 'i' : '!'}
+                      </span>
                     </div>
                   </div>
                   <div>
-                    <h4 className="font-medium text-amber-800 dark:text-amber-200 mb-1">
-                      Alternative Format Detected
+                    <h4 className={`font-medium mb-1 ${
+                      parseError.includes('show jumping content') || parseError.includes('Helio-Hoof analyzer')
+                        ? 'text-blue-800 dark:text-blue-200'
+                        : 'text-amber-800 dark:text-amber-200'
+                    }`}>
+                      {parseError.includes('show jumping content') || parseError.includes('Helio-Hoof analyzer')
+                        ? 'Invalid Image Type'
+                        : 'Alternative Format Detected'}
                     </h4>
-                    <p className="text-amber-700 dark:text-amber-300 text-sm">
-                      The analysis was returned in an unstructured format. The complete response is displayed below.
+                    <p className={`text-sm ${
+                      parseError.includes('show jumping content') || parseError.includes('Helio-Hoof analyzer')
+                        ? 'text-blue-700 dark:text-blue-300'
+                        : 'text-amber-700 dark:text-amber-300'
+                    }`}>
+                      {parseError.includes('show jumping content') || parseError.includes('Helio-Hoof analyzer')
+                        ? parseError
+                        : 'The analysis was returned in an unstructured format. The complete response is displayed below.'}
                     </p>
                   </div>
                 </div>
               </div>
             )}
 
-            <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-              <div className="prose prose-sm max-w-none dark:prose-invert">
-                <div className="whitespace-pre-wrap text-gray-700 dark:text-gray-300 leading-relaxed">
-                  {analysis}
+            {/* Only show raw response if it's not a validation error */}
+            {!(parseError && (parseError.includes('show jumping content') || parseError.includes('Helio-Hoof analyzer'))) && (
+              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+                <div className="prose prose-sm max-w-none dark:prose-invert">
+                  <div className="whitespace-pre-wrap text-gray-700 dark:text-gray-300 leading-relaxed">
+                    {analysis}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </AnalysisSection>
         </div>
       </div>

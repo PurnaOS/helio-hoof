@@ -17,6 +17,9 @@ export const metadata: Metadata = {
   title: "Helio-Hoof - Show Jumping Analyzer",
   description:
     "AI-powered equestrian analysis for show jumping. Expert evaluation of rider technique, horse performance, and partnership dynamics.",
+  icons: {
+    icon: "/icon.svg",
+  },
 };
 
 export default function RootLayout({
@@ -29,6 +32,7 @@ export default function RootLayout({
       <html lang="en">
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+          suppressHydrationWarning={true}
         >
           {children}
         </body>

@@ -9,6 +9,8 @@ interface AnalysisReportProps {
   uploadedImages: UploadedImage[];
   onReset: () => void;
   showResetButton?: boolean;
+  name?: string;
+  description?: string;
 }
 
 /**
@@ -21,6 +23,8 @@ export function AnalysisReport({
   uploadedImages,
   onReset,
   showResetButton = true,
+  name,
+  description,
 }: AnalysisReportProps) {
   // Determine if this is a multi-image analysis based on JSON structure
   const isMultiImageAnalysis = (analysisText: string): boolean => {
@@ -31,6 +35,9 @@ export function AnalysisReport({
         return (
           !!parsed.individual_analyses &&
           Array.isArray(parsed.individual_analyses)
+        ) || (
+          !!parsed.all_show_jumping &&
+          typeof parsed.all_show_jumping === 'boolean'
         );
       }
     } catch {
@@ -48,6 +55,8 @@ export function AnalysisReport({
           uploadedImages={uploadedImages}
           onReset={onReset}
           showResetButton={showResetButton}
+          name={name}
+          description={description}
         />
       ) : (
         <EquestrianAnalysis
@@ -55,6 +64,8 @@ export function AnalysisReport({
           onReset={onReset}
           showResetButton={showResetButton}
           uploadedImages={uploadedImages}
+          name={name}
+          description={description}
         />
       )}
     </div>

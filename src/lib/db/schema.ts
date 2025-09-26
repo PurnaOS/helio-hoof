@@ -11,6 +11,8 @@ import {
 export const analysisHistory = pgTable("analysis_history", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: text("user_id").notNull(), // Clerk user ID
+  name: text("name"), // User-defined name for the analysis
+  description: text("description"), // Optional description explaining the purpose
   analysisType: text("analysis_type").notNull(), // 'single' or 'multi'
   imageCount: integer("image_count").default(1),
   analysisResult: text("analysis_result").notNull(), // The AI analysis text

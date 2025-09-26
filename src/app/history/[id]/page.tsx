@@ -4,7 +4,8 @@ import { useState, useEffect, use } from "react";
 import { useUser } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, ArrowLeft } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Loader2, ArrowLeft, ImageIcon, Calendar } from "lucide-react";
 import { AnalysisReport } from "@/components/analysis-report";
 import { UploadedImage } from "@/components/image-upload";
 import Link from "next/link";
@@ -138,6 +139,39 @@ export default function AnalysisDetailPage({ params }: AnalysisDetailPageProps) 
 
       {/* Main content area - using same components as main analysis page */}
       <div className="container mx-auto px-4 py-8">
+        {/* Analysis Header with Name and Description */}
+        <div className="mb-8">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                  {analysis.name || `${analysis.analysisType === 'single' ? 'Single' : 'Multi'} Image Analysis`}
+                </h1>
+                {analysis.description && (
+                  <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
+                    {analysis.description}
+                  </p>
+                )}
+              </div>
+              <div className="flex items-center space-x-2">
+                <Badge variant={analysis.analysisType === "single" ? "default" : "secondary"}>
+                  {analysis.analysisType === "single" ? "Single" : "Multi"} Image
+                </Badge>
+              </div>
+            </div>
+            <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
+              <div className="flex items-center space-x-1">
+                <ImageIcon className="h-4 w-4" />
+                <span>{analysis.imageCount} image{analysis.imageCount !== 1 ? "s" : ""}</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <Calendar className="h-4 w-4" />
+                <span>{analysis.createdAt ? new Date(analysis.createdAt).toLocaleDateString() : 'Unknown'}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Render the analysis using the unified AnalysisReport component */}
         <AnalysisReport
           analysis={analysis.analysisResult}

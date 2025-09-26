@@ -49,6 +49,9 @@ interface MultiImageAnalysisProps {
   analysis: string;
   uploadedImages: UploadedImage[];
   onReset: () => void;
+  showResetButton?: boolean;
+  name?: string;
+  description?: string;
 }
 
 function ScoreDisplay({ score, label }: { score: number; label: string }) {
@@ -142,18 +145,13 @@ function AnalysisSection({
   );
 }
 
-interface MultiImageAnalysisProps {
-  analysis: string;
-  uploadedImages: UploadedImage[];
-  onReset: () => void;
-  showResetButton?: boolean;
-}
-
 export function MultiImageAnalysis({
   analysis,
   uploadedImages,
   onReset,
   showResetButton = true,
+  name,
+  description,
 }: MultiImageAnalysisProps) {
   const [copied, setCopied] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -168,6 +166,8 @@ export function MultiImageAnalysis({
       // Try multiple strategies to extract JSON from the analysis text
       let parsed: any = null;
       let jsonStr = "";
+
+      console.log("🔍 Multi-image: Raw analysis received:", analysis.substring(0, 300) + (analysis.length > 300 ? "..." : ""));
 
       // Strategy 1: Try parsing the entire response as JSON (for clean responses)
       try {
@@ -194,20 +194,44 @@ export function MultiImageAnalysis({
         console.log("Multi-image: Successfully parsed JSON data:", parsed);
         console.log("Multi-image: Data keys:", Object.keys(parsed));
 
-        // Validate that the parsed data has the expected structure
+        // Check if this contains non-show jumping images
+        if (parsed.all_show_jumping === false) {
+          const validCount = parsed.show_jumping_count || 0;
+          const totalImages = uploadedImages?.length || 0;
+          const invalidCount = totalImages - validCount;
+
+          if (validCount === 0) {
+            setParseError("None of the uploaded images contain show jumping content suitable for analysis. Please upload images showing horses and riders jumping over fences or obstacles.");
+            return;
+          } else {
+            setParseError(`${invalidCount} of ${totalImages} images do not show show jumping content. Analysis provided for ${validCount} valid image${validCount !== 1 ? 's' : ''}.`);
+          }
+        }
+
+        // Validate that the parsed data has the expected structure for show jumping analysis
         if (
-          Array.isArray(parsed.individual_analyses) &&
+          (Array.isArray(parsed.individual_analyses) &&
           parsed.individual_analyses.length > 0 &&
           parsed.comparative_analysis &&
-          typeof parsed.comparative_analysis === "object"
+          typeof parsed.comparative_analysis === "object") ||
+          (parsed.all_show_jumping === false && Array.isArray(parsed.individual_analyses))
         ) {
           setParsedData(parsed);
-          setParseError("");
+          if (parsed.all_show_jumping !== false) {
+            setParseError("");
+          }
         } else {
           setParseError("Multi-image analysis data structure is incomplete or invalid");
         }
       } else {
-        setParseError("Could not find JSON data in analysis response");
+        // Check if this looks like an error message
+        if (analysis.toLowerCase().includes('internal server error') ||
+            analysis.toLowerCase().includes('error') ||
+            analysis.toLowerCase().includes('failed')) {
+          setParseError("Analysis service temporarily unavailable. Please try again in a moment.");
+        } else {
+          setParseError("The analysis response could not be processed. Please try uploading your images again.");
+        }
       }
     } catch (error) {
       setParseError("Failed to parse analysis data");
@@ -256,9 +280,9 @@ export function MultiImageAnalysis({
       }
 
       await exportToEnhancedPDF({
-        title: "Equestrian Analysis Report",
-        subtitle: `Multi-Image Analysis Results (${uploadedImages.length} Images)`,
-        filename: "equestrian-multi-image-analysis",
+        title: name || "Equestrian Analysis Report",
+        subtitle: description || `Multi-Image Analysis Results (${uploadedImages.length} Images)`,
+        filename: name ? name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') : "equestrian-multi-image-analysis",
         analysis: parsedData,
         images: pdfImages,
         isMultiImage: true
@@ -327,17 +351,54 @@ export function MultiImageAnalysis({
           </CardHeader>
           <CardContent>
             {parseError && (
-              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-4">
-                <p className="text-yellow-700 dark:text-yellow-300 text-sm">
-                  {parseError}. Showing raw response:
-                </p>
+              <div className={`border rounded-lg p-4 mb-4 ${
+                parseError.includes('show jumping content') || parseError.includes('Helio-Hoof analyzer')
+                  ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
+                  : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800'
+              }`}>
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0">
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center ${
+                      parseError.includes('show jumping content') || parseError.includes('Helio-Hoof analyzer')
+                        ? 'bg-blue-500'
+                        : 'bg-yellow-500'
+                    }`}>
+                      <span className="text-white text-xs font-bold">
+                        {parseError.includes('show jumping content') || parseError.includes('Helio-Hoof analyzer') ? 'i' : '!'}
+                      </span>
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className={`font-medium mb-1 ${
+                      parseError.includes('show jumping content') || parseError.includes('Helio-Hoof analyzer')
+                        ? 'text-blue-800 dark:text-blue-200'
+                        : 'text-yellow-800 dark:text-yellow-200'
+                    }`}>
+                      {parseError.includes('show jumping content') || parseError.includes('Helio-Hoof analyzer')
+                        ? 'Invalid Image Content'
+                        : 'Analysis Error'}
+                    </h4>
+                    <p className={`text-sm ${
+                      parseError.includes('show jumping content') || parseError.includes('Helio-Hoof analyzer')
+                        ? 'text-blue-700 dark:text-blue-300'
+                        : 'text-yellow-700 dark:text-yellow-300'
+                    }`}>
+                      {parseError.includes('show jumping content') || parseError.includes('Helio-Hoof analyzer')
+                        ? parseError
+                        : `${parseError}. Showing raw response:`}
+                    </p>
+                  </div>
+                </div>
               </div>
             )}
-            <div className="prose prose-sm max-w-none dark:prose-invert">
-              <div className="whitespace-pre-wrap text-gray-700 dark:text-gray-300 leading-relaxed">
-                {analysis}
+            {/* Only show raw response if it's not a validation error */}
+            {!(parseError && (parseError.includes('show jumping content') || parseError.includes('Helio-Hoof analyzer'))) && (
+              <div className="prose prose-sm max-w-none dark:prose-invert">
+                <div className="whitespace-pre-wrap text-gray-700 dark:text-gray-300 leading-relaxed">
+                  {analysis}
+                </div>
               </div>
-            </div>
+            )}
           </CardContent>
         </Card>
       </div>

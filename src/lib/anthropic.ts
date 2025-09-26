@@ -30,7 +30,23 @@ export interface ImageAnalysisResponse {
 export async function analyzeImage({
   imageBase64,
   mimeType,
-  prompt = `You are an expert equestrian judge and trainer specializing in show jumping analysis. Analyze this show jumping image and provide technical feedback.
+  prompt = `You are an expert equestrian judge and trainer specializing in show jumping analysis. First, examine this image to determine if it contains show jumping content.
+
+STEP 1: Image Validation
+CRITICAL: You must be strict about validation. Only analyze images that show:
+- A horse and rider actively jumping over a fence, obstacle, or jump
+- The horse's feet should be off the ground (in the jumping phase)
+- There must be a visible fence/obstacle being cleared
+
+REJECT these types of images:
+- Horses and riders on flat ground (not jumping)
+- Dressage or flatwork (no jumping)
+- Horses standing still or walking
+- Screenshots, documents, or non-equestrian content
+- Any image without active show jumping
+
+STEP 2: Analysis
+If this IS a show jumping image (horse and rider actively clearing an obstacle), analyze and provide technical feedback:
 
 For the RIDER, evaluate:
 - Position and balance over the fence
@@ -47,7 +63,10 @@ For the HORSE, evaluate:
 - Overall athletic ability displayed
 
 Provide your response in this exact JSON format:
+
+FOR SHOW JUMPING IMAGES:
 {
+  "is_show_jumping": true,
   "rider_analysis": {
     "overall_score": [1-10],
     "positives": ["specific positive observation 1", "positive 2"],
@@ -64,7 +83,14 @@ Provide your response in this exact JSON format:
   "safety_observations": "any safety concerns or excellent safety practices"
 }
 
-Be specific, constructive, and use proper equestrian terminology. Focus on actionable feedback that helps improve performance.`,
+FOR NON-SHOW JUMPING IMAGES:
+{
+  "is_show_jumping": false,
+  "content_type": "description of what the image actually shows",
+  "message": "This image does not appear to show show jumping content. The Helio-Hoof analyzer is specifically designed for equestrian show jumping analysis. Please upload an image that shows a horse and rider jumping over a fence or obstacle for technical analysis."
+}
+
+Be specific, constructive, and use proper equestrian terminology when analyzing show jumping content.`,
 }: ImageAnalysisRequest): Promise<ImageAnalysisResponse> {
   // Use mock response in development mode if enabled
   if (shouldUseMockMode()) {
@@ -103,7 +129,9 @@ Be specific, constructive, and use proper equestrian terminology. Focus on actio
 
     const analysis =
       message.content[0].type === "text" ? message.content[0].text : "";
-    console.log("Anthropic analysis from actual server",);
+    console.log("Anthropic analysis from actual server");
+    console.log("Analysis preview:", analysis.substring(0, 200) + (analysis.length > 200 ? "..." : ""));
+
     return {
       analysis,
       success: true,
@@ -140,9 +168,29 @@ export async function analyzeMultipleImages(
       },
     }));
 
-    const prompt = `You are an expert equestrian judge and trainer specializing in show jumping analysis. Analyze these ${images.length} show jumping images and provide comparative technical feedback.
+    const prompt = `You are an expert equestrian judge and trainer specializing in show jumping analysis. First, examine these ${images.length} images to determine if they contain show jumping content.
 
-For EACH IMAGE, evaluate:
+STEP 1: Image Validation
+CRITICAL: You must be strict about validation. For each image, check if it shows:
+- A horse and rider actively jumping over a fence, obstacle, or jump
+- The horse's feet should be off the ground (in the jumping phase)
+- There must be a visible fence/obstacle being cleared
+
+REJECT these types of images:
+- Horses and riders on flat ground (not jumping)
+- Dressage or flatwork (no jumping)
+- Horses standing still or walking
+- Screenshots, documents, or non-equestrian content
+- Any image without active show jumping
+
+Count how many images actually show active show jumping vs other content.
+
+STEP 2: Analysis
+If ALL images show show jumping, provide comparative technical feedback.
+If SOME images show show jumping, analyze only the valid ones and clearly identify which are not suitable.
+If NO images show show jumping, explain what the images actually contain and why they cannot be analyzed.
+
+For SHOW JUMPING IMAGES, evaluate:
 - Position and balance over the fence
 - Leg security and contact
 - Hand position and release
@@ -153,15 +201,11 @@ For EACH IMAGE, evaluate:
 - Bascule (back rounding)
 - Scope and effort over the fence
 
-Then provide COMPARATIVE ANALYSIS across all images:
-- Compare rider techniques between images
-- Identify consistency or variations in performance
-- Note any progression or development patterns
-- Compare horse athletic abilities and jumping styles
-- Assess which combinations show the best partnership
-
 Provide your response in this exact JSON format:
+
+FOR ALL SHOW JUMPING IMAGES:
 {
+  "all_show_jumping": true,
   "individual_analyses": [
     {
       "image_number": 1,
@@ -185,7 +229,17 @@ Provide your response in this exact JSON format:
   "safety_observations": "any safety concerns or excellent safety practices observed"
 }
 
-Be specific, constructive, and use proper equestrian terminology. Focus on actionable feedback.`;
+FOR MIXED OR NO SHOW JUMPING IMAGES:
+{
+  "all_show_jumping": false,
+  "show_jumping_count": [number of images that actually show show jumping],
+  "valid_images": [array of image numbers that show show jumping],
+  "invalid_images": [array of image numbers that don't show show jumping],
+  "message": "Some of the uploaded images do not show show jumping content. The Helio-Hoof analyzer is specifically designed for equestrian show jumping analysis. Only images showing horses and riders jumping over fences or obstacles can be analyzed.",
+  "individual_analyses": [analysis only for valid show jumping images if any exist]
+}
+
+Be specific, constructive, and use proper equestrian terminology when analyzing show jumping content.`;
 
     const message = await anthropic.messages.create({
       model: "claude-sonnet-4-20250514",

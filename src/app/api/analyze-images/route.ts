@@ -25,7 +25,16 @@ export async function POST(request: NextRequest) {
   }
   try {
     const body = await request.json();
-    const { images } = body;
+    const { images, name, description } = body;
+
+    // Debug logging to check what data we're receiving from frontend
+    console.log('🔍 API analyze-images received:', {
+      imagesCount: images?.length || 0,
+      name,
+      description,
+      nameType: typeof name,
+      descriptionType: typeof description,
+    });
 
     if (!images || !Array.isArray(images) || images.length === 0) {
       return NextResponse.json(
@@ -63,8 +72,23 @@ export async function POST(request: NextRequest) {
         base64Data: img.base64, // Save the base64 data for history reconstruction
       }));
 
+      // Handle name and description more explicitly
+      const finalName = (name && name.trim()) ? name.trim() : `Multi Image Analysis - ${new Date().toLocaleDateString()}`;
+      const finalDescription = (description && description.trim()) ? description.trim() : null;
+
+      console.log('🔍 Multi-image database insertion values:', {
+        name: name,
+        nameType: typeof name,
+        finalName,
+        description: description,
+        descriptionType: typeof description,
+        finalDescription,
+      });
+
       await db.insert(schema.analysisHistory).values({
         userId,
+        name: finalName,
+        description: finalDescription,
         analysisType: "multi",
         analysisResult: result.analysis,
         images: imageMetadata,

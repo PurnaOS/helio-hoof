@@ -4,61 +4,72 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Helio-Hoof is a Next.js 15 application with Bun runtime, focused on horse management and tracking. The application uses ShadCN/UI for the component library and follows modern React patterns with TypeScript.
+Helio-Hoof is a Next.js 15 application focused on equestrian analysis using AI-powered image analysis. The application provides detailed analysis of horse and rider performance through uploaded images, with features for analysis history, PDF export, and multi-image comparisons. It uses modern React patterns with TypeScript and follows a server-first architecture.
 
 ## Technology Stack
 
-- **Runtime**: Bun (latest stable)
-- **Framework**: Next.js 15 with App Router
+- **Runtime**: Next.js 15 with App Router (Node.js, not Bun)
 - **Language**: TypeScript (strict mode)
-- **UI Library**: ShadCN/UI with Tailwind CSS
-- **Styling**: Tailwind CSS v3.4+ with CVA for variants
+- **UI Library**: ShadCN/UI with Tailwind CSS v4
+- **Styling**: Tailwind CSS v4 with CVA for variants
 - **Icons**: Lucide React
-- **State Management**: React Server Components + Context API/Zustand for client state
+- **Database**: PostgreSQL with Drizzle ORM
+- **Authentication**: Clerk
+- **AI Integration**: Anthropic API with Claude
+- **PDF Generation**: React-PDF and jsPDF
+- **Code Quality**: Biome (linting and formatting)
+- **Testing**: Playwright for E2E tests
 
 ## Development Commands
 
-Since this is a Bun-based project, use these commands:
+**Important**: This project uses npm/Node.js, not Bun (despite the CLAUDE.md mentioning Bun):
 
 ```bash
 # Install dependencies
-bun install
+npm install
 
-# Development server
-bun run dev
+# Development server (with Turbopack)
+npm run dev
 
 # Build for production
-bun run build
+npm run build
 
-# Run tests
-bun test
+# Production server
+npm start
 
-# Lint code
-bun run lint
+# Lint and format with Biome
+npm run lint
+npm run format
 
-# Type checking
-bun run type-check
+# Database commands
+npm run db:generate    # Generate migrations
+npm run db:push       # Push schema to database
+npm run db:studio     # Open Drizzle Studio
 
-# Format code
-bun run format
+# E2E Testing
+npm run test:e2e      # Run Playwright tests
+npm run test:e2e:ui   # Run with UI
+
+# Development setup
+npm run setup:dev     # Initial development setup
 ```
 
 ## Project Architecture
 
 ### Directory Structure
 ```
-/app              # Next.js 15 App Router - pages, layouts, route handlers
-/components       # Reusable UI components organized by feature/domain
-  /ui             # ShadCN/UI base components
-  /forms          # Form-specific components
-  /layout         # Layout-related components
-/lib              # Utility functions, constants, configurations
-/hooks            # Custom React hooks for shared logic
-/services         # External service integrations and API layers
-/types            # Global TypeScript definitions and interfaces
-/styles           # Global styles and Tailwind configuration
-/public           # Static assets
-/config           # Application configuration files
+/src              # Main source directory
+  /app            # Next.js 15 App Router - pages, layouts, API routes
+    /api          # API route handlers for image analysis and history
+    /history      # Analysis history pages
+    /sign-in      # Clerk authentication pages
+    /sign-up      # Clerk authentication pages
+  /components     # Reusable UI components
+    /ui           # ShadCN/UI base components
+    /auth         # Authentication-related components
+  /lib            # Utility functions and configurations
+    /db           # Database schema and connection (Drizzle)
+  /middleware.ts  # Next.js middleware for auth
 ```
 
 ### Key Architectural Patterns
@@ -83,14 +94,15 @@ bun run format
 - Implement proper TypeScript interfaces for all props
 - Follow accessibility best practices (WCAG AA compliance)
 
-### Horse Management Domain
+### Equestrian Analysis Domain
 
-Based on git history, this application handles:
-- Horse profile management with CRUD operations
-- Tenant management and multi-tenancy
-- User account management with role-based access
-- Admin dashboard with activity stats and metrics
-- Account deactivation with reason tracking
+This application provides:
+- **AI-Powered Image Analysis**: Upload images of horses and riders for detailed performance analysis using Anthropic's Claude API
+- **Single & Multi-Image Analysis**: Analyze individual images or compare multiple images for progression tracking
+- **Analysis History**: Store and retrieve past analyses with full details
+- **PDF Export**: Generate detailed PDF reports with analysis results, scores, and recommendations
+- **Mock Development Mode**: Development-friendly mock API responses to avoid costs during development
+- **Authentication**: User management via Clerk with protected routes
 
 ### Theme System
 
@@ -114,53 +126,69 @@ Optimization strategies:
 - Font optimization with next/font
 - Static page caching and API response caching
 
+## Key Features Implementation
+
+### Mock Development Mode
+The application includes a sophisticated mock system for development:
+- Set `USE_MOCK_LLM=true` in `.env.local` to avoid API costs
+- Mock responses in `src/lib/mock-anthropic.ts` provide realistic analysis data
+- Development configuration utilities in `src/lib/dev-config.ts`
+- See `DEVELOPMENT.md` for detailed setup instructions
+
+### API Routes
+- `/api/analyze-image` - Single image analysis
+- `/api/analyze-images` - Multi-image analysis with comparison
+- `/api/analysis-history` - CRUD operations for analysis history
+- `/api/analysis-history/[id]` - Individual analysis retrieval
+
+### Database Schema
+- PostgreSQL with Drizzle ORM
+- Schema defined in `src/lib/db/schema.ts`
+- Connection handling in `src/lib/db/index.ts`
+
 ## Code Quality Standards
 
+**Formatting & Linting**:
+- Biome for code formatting and linting (replaces ESLint/Prettier)
+- Configuration in `biome.json`
+- Run `npm run lint` for checking, `npm run format` for auto-formatting
+
 **TypeScript**:
-- Strict mode enabled
-- Proper type definitions for all props and functions
-- No `any` types without justification
-- Use type-safe environment variables
+- Strict mode enabled in `tsconfig.json`
+- Path aliases configured (`@/*` maps to `./src/*`)
+- Proper type definitions for all API responses and component props
 
-**Component Standards**:
-- Use forwardRef for components that need DOM refs
-- Implement proper prop interfaces
-- Follow ShadCN/UI patterns for styling
-- Use compound component patterns where appropriate
+## Environment Configuration
 
-**API Routes**:
-- RESTful endpoint structure
-- Proper HTTP method usage
-- Standardized error responses
-- Input validation on all endpoints
+### Required Environment Variables
+```bash
+# Authentication (Clerk)
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
+CLERK_SECRET_KEY=
 
-## Testing Strategy
+# Database
+DATABASE_URL=
 
-**Bun Test Runner**: Use Bun's native test runner for fast execution
-- Unit tests for utility functions and hooks
-- Component testing with React Testing Library patterns
-- API route testing for backend functionality
-- Integration tests for user workflows
+# AI Integration
+ANTHROPIC_API_KEY=              # Required for production
+USE_MOCK_LLM=true               # Set to false for production
 
-**Coverage Targets**:
-- 80% line coverage for business logic
-- 70% coverage for UI components
-- 90% coverage for utility functions
+# Next.js
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+```
+
+### Development Setup
+1. Copy `.env.development` to `.env.local` for mock mode
+2. Set up Clerk authentication keys
+3. Configure PostgreSQL database URL
+4. Run `npm run setup:dev` for initial setup
+5. Use `npm run db:push` to sync database schema
 
 ## Security Considerations
 
-- Server-side validation for all inputs
-- Proper sanitization to prevent XSS
-- Role-based access control (RBAC)
-- Secure session management
-- Regular dependency audits with Bun
-
-## Deployment
-
-Primary deployment target is Vercel with optimization for:
-- Serverless functions compatibility
-- Edge runtime where appropriate
-- Environment variable management
-- Preview deployments for PRs
-
-The application is designed to be stateless and horizontally scalable with proper session management and caching strategies.
+- Clerk handles authentication and user management
+- Server-side validation for all API inputs
+- Environment variables for sensitive data
+- Protected API routes with authentication middleware
+- Secure image upload handling

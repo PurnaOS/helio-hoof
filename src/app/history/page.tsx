@@ -70,36 +70,56 @@ export default function HistoryPage() {
   // Helper function to extract overall scores from analysis JSON
   const extractScores = (analysisResult: string) => {
     try {
-      const jsonMatch = analysisResult.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
-
-        // For single image analysis
-        if (parsed.rider_analysis && parsed.horse_analysis) {
-          return {
-            riderScore: parsed.rider_analysis.overall_score || 0,
-            horseScore: parsed.horse_analysis.overall_score || 0,
-            type: 'single'
-          };
+      // First try to parse the entire string as JSON
+      let parsed;
+      try {
+        parsed = JSON.parse(analysisResult);
+      } catch {
+        // If that fails, try to extract JSON from the string
+        const jsonMatch = analysisResult.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) {
+          return { riderScore: 0, horseScore: 0, type: 'unknown' };
         }
 
-        // For multi-image analysis
-        if (parsed.individual_analyses && Array.isArray(parsed.individual_analyses)) {
-          const avgRider = parsed.individual_analyses.reduce((sum: number, analysis: any) =>
-            sum + (analysis.rider_score || 0), 0) / parsed.individual_analyses.length;
-          const avgHorse = parsed.individual_analyses.reduce((sum: number, analysis: any) =>
-            sum + (analysis.horse_score || 0), 0) / parsed.individual_analyses.length;
+        // Clean up the JSON string to handle common issues
+        let jsonString = jsonMatch[0];
 
-          return {
-            riderScore: Math.round(avgRider * 10) / 10,
-            horseScore: Math.round(avgHorse * 10) / 10,
-            type: 'multi',
-            imageCount: parsed.individual_analyses.length
-          };
-        }
+        // Remove any trailing commas that might cause JSON parsing errors
+        jsonString = jsonString.replace(/,(\s*[}\]])/g, '$1');
+
+        // Remove any control characters that might cause issues
+        jsonString = jsonString.replace(/[\x00-\x1F\x7F]/g, '');
+
+        // Try to parse the cleaned JSON
+        parsed = JSON.parse(jsonString);
+      }
+
+      // For single image analysis
+      if (parsed.rider_analysis && parsed.horse_analysis) {
+        return {
+          riderScore: parsed.rider_analysis.overall_score || 0,
+          horseScore: parsed.horse_analysis.overall_score || 0,
+          type: 'single'
+        };
+      }
+
+      // For multi-image analysis
+      if (parsed.individual_analyses && Array.isArray(parsed.individual_analyses)) {
+        const avgRider = parsed.individual_analyses.reduce((sum: number, analysis: any) =>
+          sum + (analysis.rider_score || 0), 0) / parsed.individual_analyses.length;
+        const avgHorse = parsed.individual_analyses.reduce((sum: number, analysis: any) =>
+          sum + (analysis.horse_score || 0), 0) / parsed.individual_analyses.length;
+
+        return {
+          riderScore: Math.round(avgRider * 10) / 10,
+          horseScore: Math.round(avgHorse * 10) / 10,
+          type: 'multi',
+          imageCount: parsed.individual_analyses.length
+        };
       }
     } catch (error) {
       console.error('Error parsing analysis scores:', error);
+      console.error('Analysis data that failed to parse:', analysisResult.substring(0, 200) + '...');
     }
 
     return null;
@@ -249,6 +269,18 @@ export default function HistoryPage() {
                       >
                         <Trash2 className="h-3 w-3" />
                       </Button>
+                    </div>
+
+                    {/* Analysis Name and Description */}
+                    <div className="mb-3">
+                      <h3 className="font-semibold text-gray-900 dark:text-white text-sm mb-1">
+                        {item.name || `${item.analysisType === 'single' ? 'Single' : 'Multi'} Image Analysis`}
+                      </h3>
+                      {item.description && (
+                        <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
+                          {item.description}
+                        </p>
+                      )}
                     </div>
 
                     <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400 mb-3">

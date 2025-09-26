@@ -1,0 +1,1 @@
+ALTER TABLE "analysis_history" ALTER COLUMN "name" DROP NOT NULL;

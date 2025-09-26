@@ -22,7 +22,7 @@ export function generatePDFContent(options: EnhancedPDFExportOptions) {
     <div style="border-top: 2px solid #f3f4f6; padding-top: 20px;">
       <h3 style="font-weight: 600; margin-bottom: 16px; text-align: center;">Analyzed Images</h3>
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; justify-items: center;">
-        ${images.map((image, index) => `
+        ${images.map((image: any, index: number) => `
           <div style="text-align: center;">
             <img
               src="${image.base64.startsWith('data:') ? image.base64 : `data:${image.mimeType};base64,${image.base64}`}"
@@ -45,7 +45,7 @@ export function generatePDFContent(options: EnhancedPDFExportOptions) {
 
   // Generate individual image pages with analysis
   const multiImagePagesHTML = isMultiImage && analysis.individual_analyses ?
-    analysis.individual_analyses.map((item, index) => {
+    analysis.individual_analyses.map((item: any, index: number) => {
       const correspondingImage = images[index];
       return `
         <div class="page-break"></div>
@@ -106,21 +106,21 @@ export function generatePDFContent(options: EnhancedPDFExportOptions) {
             <div class="avoid-break" style="margin-bottom: 16px;">
               <h4 class="positive-text" style="margin-bottom: 8px;">✓ Rider Strengths</h4>
               <ul class="space-y-2">
-                ${item.rider_strengths.map(strength => `<li style="font-size: 0.875rem;">• ${strength}</li>`).join('')}
+                ${item.rider_strengths.map((strength: string) => `<li style="font-size: 0.875rem;">• ${strength}</li>`).join('')}
               </ul>
             </div>
 
             <div class="avoid-break" style="margin-bottom: 16px;">
               <h4 class="improvement-text" style="margin-bottom: 8px;">⚠ Areas for Improvement</h4>
               <ul class="space-y-2">
-                ${(item.rider_weaknesses || item.improvements || []).map(weakness => `<li style="font-size: 0.875rem;">• ${weakness}</li>`).join('')}
+                ${(item.rider_weaknesses || item.improvements || []).map((weakness: string) => `<li style="font-size: 0.875rem;">• ${weakness}</li>`).join('')}
               </ul>
             </div>
 
             <div class="avoid-break">
               <h4 class="positive-text" style="margin-bottom: 8px;">🐎 Horse Strengths</h4>
               <ul class="space-y-2">
-                ${item.horse_strengths.map(strength => `<li style="font-size: 0.875rem;">• ${strength}</li>`).join('')}
+                ${item.horse_strengths.map((strength: string) => `<li style="font-size: 0.875rem;">• ${strength}</li>`).join('')}
               </ul>
             </div>
           </div>
@@ -183,14 +183,14 @@ export function generatePDFContent(options: EnhancedPDFExportOptions) {
           <div style="margin-bottom: 16px;">
             <h4 class="positive-text" style="font-size: 1.125rem; margin-bottom: 8px;">✓ Positives</h4>
             <ul class="space-y-2">
-              ${analysis.rider_analysis.positives.map(positive => `<li style="font-size: 0.875rem;">• ${positive}</li>`).join('')}
+              ${analysis.rider_analysis.positives.map((positive: string) => `<li style="font-size: 0.875rem;">• ${positive}</li>`).join('')}
             </ul>
           </div>
 
           <div style="margin-bottom: 16px;">
             <h4 class="improvement-text" style="font-size: 1.125rem; margin-bottom: 8px;">⚠ Areas for Improvement</h4>
             <ul class="space-y-2">
-              ${analysis.rider_analysis.areas_for_improvement.map(area => `<li style="font-size: 0.875rem;">• ${area}</li>`).join('')}
+              ${analysis.rider_analysis.areas_for_improvement.map((area: string) => `<li style="font-size: 0.875rem;">• ${area}</li>`).join('')}
             </ul>
           </div>
 
@@ -211,14 +211,14 @@ export function generatePDFContent(options: EnhancedPDFExportOptions) {
           <div style="margin-bottom: 16px;">
             <h4 class="positive-text" style="font-size: 1.125rem; margin-bottom: 8px;">✓ Positives</h4>
             <ul class="space-y-2">
-              ${analysis.horse_analysis.positives.map(positive => `<li style="font-size: 0.875rem;">• ${positive}</li>`).join('')}
+              ${analysis.horse_analysis.positives.map((positive: string) => `<li style="font-size: 0.875rem;">• ${positive}</li>`).join('')}
             </ul>
           </div>
 
           <div style="margin-bottom: 16px;">
             <h4 style="font-weight: 600; font-size: 1.125rem; margin-bottom: 8px;">🔧 Technical Notes</h4>
             <ul class="space-y-2">
-              ${analysis.horse_analysis.technical_notes.map(note => `<li style="font-size: 0.875rem;">• ${note}</li>`).join('')}
+              ${analysis.horse_analysis.technical_notes.map((note: string) => `<li style="font-size: 0.875rem;">• ${note}</li>`).join('')}
             </ul>
           </div>
 
@@ -297,7 +297,7 @@ export function generatePDFContent(options: EnhancedPDFExportOptions) {
         <div class="avoid-break">
           <h4 class="priority-text" style="margin-bottom: 8px;">Priority Focus Areas</h4>
           <ul class="space-y-2">
-            ${analysis.comparative_analysis.priority_focus_areas.map(area => `<li style="font-size: 0.875rem;">• ${area}</li>`).join('')}
+            ${analysis.comparative_analysis.priority_focus_areas.map((area: string) => `<li style="font-size: 0.875rem;">• ${area}</li>`).join('')}
           </ul>
         </div>
       </div>
@@ -529,7 +529,7 @@ export async function exportToEnhancedPDF(options: EnhancedPDFExportOptions): Pr
   // Debug image data
   console.log('PDF Export Debug:', {
     imageCount: images.length,
-    imageDetails: images.map((img, i) => {
+    imageDetails: images.map((img: any, i: number) => {
       const finalSrc = img.base64?.startsWith('data:') ? img.base64 : `data:${img.mimeType};base64,${img.base64}`;
       return {
         index: i,

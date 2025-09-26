@@ -25,7 +25,19 @@ export async function POST(request: NextRequest) {
   }
   try {
     const body = await request.json();
-    const { imageBase64, mimeType, filename, size } = body;
+    const { imageBase64, mimeType, filename, size, name, description } = body;
+
+    // Debug logging to check what data we're receiving from frontend
+    console.log('🔍 API analyze-image received:', {
+      hasImageBase64: !!imageBase64,
+      mimeType,
+      filename,
+      size,
+      name,
+      description,
+      nameType: typeof name,
+      descriptionType: typeof description,
+    });
 
     if (!imageBase64 || !mimeType) {
       return NextResponse.json(
@@ -56,8 +68,23 @@ export async function POST(request: NextRequest) {
         base64Data: imageBase64, // Save the base64 data for history reconstruction
       };
 
+      // Handle name and description more explicitly
+      const finalName = (name && name.trim()) ? name.trim() : `Single Image Analysis - ${new Date().toLocaleDateString()}`;
+      const finalDescription = (description && description.trim()) ? description.trim() : null;
+
+      console.log('🔍 Database insertion values:', {
+        name: name,
+        nameType: typeof name,
+        finalName,
+        description: description,
+        descriptionType: typeof description,
+        finalDescription,
+      });
+
       await db.insert(schema.analysisHistory).values({
         userId,
+        name: finalName,
+        description: finalDescription,
         analysisType: "single",
         analysisResult: result.analysis,
         images: [imageMetadata],

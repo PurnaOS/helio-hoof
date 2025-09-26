@@ -7,11 +7,14 @@ import { useDropzone } from "react-dropzone";
 import { useUser } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { cn, convertToBase64, validateImageFile } from "@/lib/utils";
 import Link from "next/link";
 
 interface ImageUploadProps {
-  onAnalysis: (analysis: string, images?: UploadedImage[]) => void;
+  onAnalysis: (analysis: string, images?: UploadedImage[], name?: string, description?: string) => void;
   onError: (error: string) => void;
 }
 
@@ -28,6 +31,8 @@ export function ImageUpload({ onAnalysis, onError }: ImageUploadProps) {
   const { isSignedIn, isLoaded } = useUser();
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisName, setAnalysisName] = useState<string>("");
+  const [analysisDescription, setAnalysisDescription] = useState<string>("");
 
   const onDrop = useCallback(
     async (acceptedFiles: File[]) => {
@@ -144,6 +149,15 @@ export function ImageUpload({ onAnalysis, onError }: ImageUploadProps) {
   const analyzeImages = async () => {
     if (uploadedImages.length === 0) return;
 
+    // Debug logging to check what values we have before sending
+    console.log('🔍 Frontend analyzeImages called with:', {
+      analysisName,
+      analysisDescription,
+      nameLength: analysisName.length,
+      descriptionLength: analysisDescription.length,
+      imagesCount: uploadedImages.length,
+    });
+
     setIsAnalyzing(true);
     try {
       if (uploadedImages.length === 1) {
@@ -161,6 +175,8 @@ export function ImageUpload({ onAnalysis, onError }: ImageUploadProps) {
             mimeType: img.file.type,
             filename: img.file.name,
             size: img.file.size,
+            name: analysisName,
+            description: analysisDescription,
           }),
         });
 
@@ -170,7 +186,7 @@ export function ImageUpload({ onAnalysis, onError }: ImageUploadProps) {
           throw new Error(data.error || "Failed to analyze image");
         }
 
-        onAnalysis(data.analysis, uploadedImages);
+        onAnalysis(data.analysis, uploadedImages, analysisName, analysisDescription);
       } else {
         // Multi-image analysis
         const imageData = await Promise.all(
@@ -189,6 +205,8 @@ export function ImageUpload({ onAnalysis, onError }: ImageUploadProps) {
           },
           body: JSON.stringify({
             images: imageData,
+            name: analysisName,
+            description: analysisDescription,
           }),
         });
 
@@ -198,7 +216,7 @@ export function ImageUpload({ onAnalysis, onError }: ImageUploadProps) {
           throw new Error(data.error || "Failed to analyze images");
         }
 
-        onAnalysis(data.analysis, uploadedImages);
+        onAnalysis(data.analysis, uploadedImages, analysisName, analysisDescription);
       }
     } catch (error) {
       onError(
@@ -292,9 +310,34 @@ export function ImageUpload({ onAnalysis, onError }: ImageUploadProps) {
                 ))}
               </div>
 
+              {/* Analysis Details Form */}
+              <div className="space-y-4 border-t pt-6 mt-6">
+                <div className="space-y-2">
+                  <Label htmlFor="analysis-name">Analysis Name</Label>
+                  <Input
+                    id="analysis-name"
+                    placeholder="Enter a name for this analysis (e.g., 'Training Session 1', 'Competition Practice')"
+                    value={analysisName}
+                    onChange={(e) => setAnalysisName(e.target.value)}
+                    maxLength={100}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="analysis-description">Description (Optional)</Label>
+                  <Textarea
+                    id="analysis-description"
+                    placeholder="Describe the purpose of this analysis (e.g., 'Working on jump approach technique', 'Analyzing rider position during competition')"
+                    value={analysisDescription}
+                    onChange={(e) => setAnalysisDescription(e.target.value)}
+                    rows={3}
+                    maxLength={500}
+                  />
+                </div>
+              </div>
+
               <Button
                 onClick={analyzeImages}
-                disabled={isAnalyzing || uploadedImages.length === 0}
+                disabled={isAnalyzing || uploadedImages.length === 0 || !analysisName.trim()}
                 className="w-full"
                 size="lg"
               >
