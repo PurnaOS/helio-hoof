@@ -4,7 +4,7 @@ import { useUser } from "@clerk/nextjs";
 import { Loader2, Upload, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -38,42 +38,117 @@ export function ImageUpload({ onAnalysis, onError }: ImageUploadProps) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisName, setAnalysisName] = useState<string>("");
   const [analysisDescription, setAnalysisDescription] = useState<string>("");
+  const [isUploading, setIsUploading] = useState(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const mountedRef = useRef(true);
+
+  // Cleanup effect for component unmount
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+
+      // Cancel ongoing analysis
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+
+      // Cleanup all Object URLs
+      uploadedImages.forEach((img) => {
+        URL.revokeObjectURL(img.previewUrl);
+      });
+    };
+  }, [uploadedImages]);
+
+  // Update mounted ref when component mounts
+  useEffect(() => {
+    mountedRef.current = true;
+  }, []);
 
   const onDrop = useCallback(
     async (acceptedFiles: File[]) => {
-      const newImages: UploadedImage[] = [];
+      if (!mountedRef.current) return;
 
-      for (const file of acceptedFiles) {
-        const validation = validateImageFile(file);
-        if (!validation.isValid) {
-          onError(validation.error || "Invalid file");
-          continue;
+      setIsUploading(true);
+      const newImages: UploadedImage[] = [];
+      const urlsToCleanup: string[] = [];
+
+      try {
+        for (const file of acceptedFiles) {
+          if (!mountedRef.current) {
+            // Component unmounted, cleanup and exit
+            urlsToCleanup.forEach((url) => {
+              URL.revokeObjectURL(url);
+            });
+            return;
+          }
+
+          const validation = validateImageFile(file);
+          if (!validation.isValid) {
+            onError(validation.error || "Invalid file");
+            continue;
+          }
+
+          const url = URL.createObjectURL(file);
+          urlsToCleanup.push(url);
+
+          try {
+            const base64 = await convertToBase64(file);
+            if (!mountedRef.current) {
+              // Component unmounted during conversion
+              urlsToCleanup.forEach((url) => {
+                URL.revokeObjectURL(url);
+              });
+              return;
+            }
+
+            newImages.push({
+              file,
+              previewUrl: url,
+              id: `${file.name}-${Date.now()}-${Math.random()}`,
+              base64,
+              mimeType: file.type,
+              filename: file.name,
+            });
+          } catch (error) {
+            console.error("Error converting image to base64:", error);
+            if (!mountedRef.current) {
+              urlsToCleanup.forEach((url) => {
+                URL.revokeObjectURL(url);
+              });
+              return;
+            }
+
+            newImages.push({
+              file,
+              previewUrl: url,
+              id: `${file.name}-${Date.now()}-${Math.random()}`,
+              mimeType: file.type,
+              filename: file.name,
+            });
+          }
         }
 
-        const url = URL.createObjectURL(file);
-        try {
-          const base64 = await convertToBase64(file);
-          newImages.push({
-            file,
-            previewUrl: url,
-            id: `${file.name}-${Date.now()}-${Math.random()}`,
-            base64,
-            mimeType: file.type,
-            filename: file.name,
+        if (mountedRef.current && newImages.length > 0) {
+          setUploadedImages((prev) => [...prev, ...newImages]);
+        } else if (newImages.length === 0) {
+          // No valid images, cleanup URLs
+          urlsToCleanup.forEach((url) => {
+            URL.revokeObjectURL(url);
           });
-        } catch (error) {
-          console.error("Error converting image to base64:", error);
-          newImages.push({
-            file,
-            previewUrl: url,
-            id: `${file.name}-${Date.now()}-${Math.random()}`,
-            mimeType: file.type,
-            filename: file.name,
-          });
+        }
+      } catch (error) {
+        console.error("Error in onDrop:", error);
+        urlsToCleanup.forEach((url) => {
+          URL.revokeObjectURL(url);
+        });
+        if (mountedRef.current) {
+          onError("Failed to process images. Please try again.");
+        }
+      } finally {
+        if (mountedRef.current) {
+          setIsUploading(false);
         }
       }
-
-      setUploadedImages((prev) => [...prev, ...newImages]);
     },
     [onError],
   );
@@ -116,7 +191,8 @@ export function ImageUpload({ onAnalysis, onError }: ImageUploadProps) {
                   Join our waitlist to start analyzing
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400">
-                  We're currently in private beta. Join our waitlist to get early access to our show jumping analysis platform
+                  We're currently in private beta. Join our waitlist to get
+                  early access to our show jumping analysis platform
                 </p>
               </div>
               <div className="flex gap-4 justify-center">
@@ -152,7 +228,7 @@ export function ImageUpload({ onAnalysis, onError }: ImageUploadProps) {
   };
 
   const analyzeImages = async () => {
-    if (uploadedImages.length === 0) return;
+    if (uploadedImages.length === 0 || !mountedRef.current) return;
 
     // Debug logging to check what values we have before sending
     console.log("🔍 Frontend analyzeImages called with:", {
@@ -163,12 +239,24 @@ export function ImageUpload({ onAnalysis, onError }: ImageUploadProps) {
       imagesCount: uploadedImages.length,
     });
 
+    // Create abort controller for this analysis
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+
     setIsAnalyzing(true);
     try {
       if (uploadedImages.length === 1) {
         // Single image analysis
         const img = uploadedImages[0];
-        const base64 = await convertToBase64(img.file);
+        let base64 = img.base64;
+
+        // Use cached base64 if available, otherwise convert
+        if (!base64) {
+          if (!mountedRef.current) return;
+          base64 = await convertToBase64(img.file);
+        }
+
+        if (!mountedRef.current) return;
 
         const response = await fetch("/api/analyze-image", {
           method: "POST",
@@ -183,7 +271,10 @@ export function ImageUpload({ onAnalysis, onError }: ImageUploadProps) {
             name: analysisName,
             description: analysisDescription,
           }),
+          signal: abortController.signal,
         });
+
+        if (!mountedRef.current) return;
 
         const data = await response.json();
 
@@ -191,22 +282,37 @@ export function ImageUpload({ onAnalysis, onError }: ImageUploadProps) {
           throw new Error(data.error || "Failed to analyze image");
         }
 
-        onAnalysis(
-          data.analysis,
-          uploadedImages,
-          analysisName,
-          analysisDescription,
-        );
+        if (mountedRef.current) {
+          onAnalysis(
+            data.analysis,
+            uploadedImages,
+            analysisName,
+            analysisDescription,
+          );
+        }
       } else {
         // Multi-image analysis
-        const imageData = await Promise.all(
-          uploadedImages.map(async (img) => ({
-            base64: await convertToBase64(img.file),
+        const imageData = [];
+
+        for (const img of uploadedImages) {
+          if (!mountedRef.current) return;
+
+          let base64 = img.base64;
+          if (!base64) {
+            base64 = await convertToBase64(img.file);
+          }
+
+          if (!mountedRef.current) return;
+
+          imageData.push({
+            base64,
             mimeType: img.file.type,
             filename: img.file.name,
             size: img.file.size,
-          })),
-        );
+          });
+        }
+
+        if (!mountedRef.current) return;
 
         const response = await fetch("/api/analyze-images", {
           method: "POST",
@@ -218,7 +324,10 @@ export function ImageUpload({ onAnalysis, onError }: ImageUploadProps) {
             name: analysisName,
             description: analysisDescription,
           }),
+          signal: abortController.signal,
         });
+
+        if (!mountedRef.current) return;
 
         const data = await response.json();
 
@@ -226,20 +335,35 @@ export function ImageUpload({ onAnalysis, onError }: ImageUploadProps) {
           throw new Error(data.error || "Failed to analyze images");
         }
 
-        onAnalysis(
-          data.analysis,
-          uploadedImages,
-          analysisName,
-          analysisDescription,
-        );
+        if (mountedRef.current) {
+          onAnalysis(
+            data.analysis,
+            uploadedImages,
+            analysisName,
+            analysisDescription,
+          );
+        }
       }
     } catch (error) {
-      onError(
-        error instanceof Error ? error.message : "Failed to analyze images",
-      );
+      if (mountedRef.current && !abortController.signal.aborted) {
+        onError(
+          error instanceof Error ? error.message : "Failed to analyze images",
+        );
+      }
     } finally {
-      setIsAnalyzing(false);
+      if (mountedRef.current) {
+        setIsAnalyzing(false);
+      }
+      abortControllerRef.current = null;
     }
+  };
+
+  const cancelAnalysis = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setIsAnalyzing(false);
   };
 
   return (
@@ -263,14 +387,18 @@ export function ImageUpload({ onAnalysis, onError }: ImageUploadProps) {
             <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
             <div className="space-y-2">
               <p className="text-lg font-medium">
-                {isDragActive
-                  ? "Drop the images here"
-                  : uploadedImages.length > 0
-                    ? "Add more images"
-                    : "Upload images"}
+                {isUploading
+                  ? "Processing images..."
+                  : isDragActive
+                    ? "Drop the images here"
+                    : uploadedImages.length > 0
+                      ? "Add more images"
+                      : "Upload images"}
               </p>
               <p className="text-sm text-gray-500">
-                Drag and drop multiple image files here, or click to select
+                {isUploading
+                  ? "Please wait while we process your images"
+                  : "Drag and drop multiple image files here, or click to select"}
               </p>
               <p className="text-xs text-gray-400">
                 Supports JPEG, PNG, WebP, GIF up to 10MB each
@@ -355,26 +483,39 @@ export function ImageUpload({ onAnalysis, onError }: ImageUploadProps) {
                 </div>
               </div>
 
-              <Button
-                onClick={analyzeImages}
-                disabled={
-                  isAnalyzing ||
-                  uploadedImages.length === 0 ||
-                  !analysisName.trim()
-                }
-                className="w-full"
-                size="lg"
-              >
-                {isAnalyzing ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Analyzing {uploadedImages.length} Image
-                    {uploadedImages.length > 1 ? "s" : ""}...
-                  </>
-                ) : (
-                  `Analyze ${uploadedImages.length} Image${uploadedImages.length > 1 ? "s" : ""}`
+              <div className="flex gap-2">
+                <Button
+                  onClick={analyzeImages}
+                  disabled={
+                    isAnalyzing ||
+                    isUploading ||
+                    uploadedImages.length === 0 ||
+                    !analysisName.trim()
+                  }
+                  className="flex-1"
+                  size="lg"
+                >
+                  {isAnalyzing ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Analyzing {uploadedImages.length} Image
+                      {uploadedImages.length > 1 ? "s" : ""}...
+                    </>
+                  ) : (
+                    `Analyze ${uploadedImages.length} Image${uploadedImages.length > 1 ? "s" : ""}`
+                  )}
+                </Button>
+                {isAnalyzing && (
+                  <Button
+                    onClick={cancelAnalysis}
+                    variant="outline"
+                    size="lg"
+                    className="text-red-600 hover:text-red-700"
+                  >
+                    Cancel
+                  </Button>
                 )}
-              </Button>
+              </div>
             </div>
           </CardContent>
         </Card>

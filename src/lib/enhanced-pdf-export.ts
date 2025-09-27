@@ -144,21 +144,21 @@ export function generatePDFContent(options: EnhancedPDFExportOptions) {
             <div class="avoid-break" style="margin-bottom: 16px;">
               <h4 class="positive-text" style="margin-bottom: 8px;">✓ Rider Strengths</h4>
               <ul class="space-y-2">
-                ${item.rider_strengths.map((strength: string) => `<li style="font-size: 0.875rem;">• ${strength}</li>`).join("")}
+                ${(item.rider_strengths as string[])?.map((strength: string) => `<li style="font-size: 0.875rem;">• ${strength}</li>`).join("") || ""}
               </ul>
             </div>
 
             <div class="avoid-break" style="margin-bottom: 16px;">
               <h4 class="improvement-text" style="margin-bottom: 8px;">⚠ Areas for Improvement</h4>
               <ul class="space-y-2">
-                ${(item.rider_weaknesses || item.improvements || []).map((weakness: string) => `<li style="font-size: 0.875rem;">• ${weakness}</li>`).join("")}
+                ${((item.rider_weaknesses as string[]) || (item.improvements as string[]) || []).map((weakness: string) => `<li style="font-size: 0.875rem;">• ${weakness}</li>`).join("")}
               </ul>
             </div>
 
             <div class="avoid-break">
               <h4 class="positive-text" style="margin-bottom: 8px;">🐎 Horse Strengths</h4>
               <ul class="space-y-2">
-                ${item.horse_strengths.map((strength: string) => `<li style="font-size: 0.875rem;">• ${strength}</li>`).join("")}
+                ${(item.horse_strengths as string[])?.map((strength: string) => `<li style="font-size: 0.875rem;">• ${strength}</li>`).join("") || ""}
               </ul>
             </div>
           </div>
@@ -213,11 +213,11 @@ export function generatePDFContent(options: EnhancedPDFExportOptions) {
         <div class="grid-2" style="margin-bottom: 30px;">
           <div class="text-center">
             <p style="font-weight: 600; margin-bottom: 12px; font-size: 1.125rem;">Rider Performance</p>
-            <span class="score-badge">${analysis.rider_analysis.overall_score}/10</span>
+            <span class="score-badge">${analysis.rider_analysis?.overall_score || 0}/10</span>
           </div>
           <div class="text-center">
             <p style="font-weight: 600; margin-bottom: 12px; font-size: 1.125rem;">Horse Performance</p>
-            <span class="score-badge">${analysis.horse_analysis.overall_score}/10</span>
+            <span class="score-badge">${analysis.horse_analysis?.overall_score || 0}/10</span>
           </div>
         </div>
 

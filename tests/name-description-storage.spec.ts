@@ -1,29 +1,10 @@
 import { expect, test } from "@playwright/test";
+import { authenticateUser } from "./test-helpers/auth";
 
 test.describe("Name and Description Storage Validation", () => {
   test.beforeEach(async ({ page }) => {
-    // Navigate to the application
-    await page.goto("http://localhost:3000");
-
-    // Sign in with provided credentials - click the first Sign In button in header
-    await page
-      .getByRole("banner")
-      .getByRole("button", { name: "Sign In" })
-      .click();
-    await page.waitForLoadState("networkidle");
-
-    // Fill in credentials
-    await page.getByLabel("Email address").fill("srinivasarajui@gmail.com");
-    await page.getByRole("button", { name: "Continue" }).click();
-
-    // Wait for password field and fill it
-    await page.waitForSelector('input[name="password"]', { timeout: 10000 });
-    await page.getByLabel("Password").fill("Srithejas+Saurya=1");
-    await page.getByRole("button", { name: "Continue" }).click();
-
-    // Wait for successful login and navigation back to home
-    await page.waitForLoadState("networkidle");
-    await expect(page.getByText("Show Jumping Analyzer")).toBeVisible();
+    // Authenticate user using secure helper
+    await authenticateUser(page);
   });
 
   test("should store and display name and description for new analysis", async ({

@@ -3,63 +3,119 @@ import { type NextRequest, NextResponse } from "next/server";
 import { analyzeMultipleImages } from "@/lib/anthropic";
 import { db, schema } from "@/lib/db";
 import { logDevConfig, validateDevSetup } from "@/lib/dev-config";
+import { multipleImagesSchema } from "@/lib/validation/schemas";
+import {
+  ApiErrorCode,
+  checkRateLimit,
+  createErrorResponse,
+  createSuccessResponse,
+  logApiError,
+  sanitizeObject,
+  setCorsHeaders,
+  setSecurityHeaders,
+  validateRequest,
+} from "@/lib/validation/utils";
 
 export async function POST(request: NextRequest) {
-  // Log development configuration
-  logDevConfig();
+  let response: NextResponse;
+  let userId: string | null = null;
 
-  // Check authentication
-  const { userId } = await auth();
-  if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  // Validate setup
-  const validation = validateDevSetup();
-  if (!validation.valid) {
-    console.error("❌ Configuration Error:", validation.message);
-    return NextResponse.json(
-      { error: `Configuration Error: ${validation.message}` },
-      { status: 500 },
-    );
-  }
   try {
-    const body = await request.json();
-    const { images, name, description } = body;
+    // Log development configuration
+    logDevConfig();
+
+    // Check authentication
+    const authResult = await auth();
+    userId = authResult.userId;
+    if (!userId) {
+      response = createErrorResponse(
+        "Authentication required",
+        401,
+        ApiErrorCode.AUTHENTICATION_ERROR,
+      );
+      return setCorsHeaders(setSecurityHeaders(response));
+    }
+
+    // Rate limiting (stricter for multiple images)
+    const clientIP =
+      request.headers.get("x-forwarded-for") ||
+      request.headers.get("x-real-ip") ||
+      "unknown";
+    const rateLimit = checkRateLimit(
+      `analyze-images:${userId}:${clientIP}`,
+      20,
+      60000,
+    ); // 20 requests per minute
+
+    if (!rateLimit.allowed) {
+      response = createErrorResponse(
+        "Rate limit exceeded. Please try again later.",
+        429,
+        ApiErrorCode.RATE_LIMIT_EXCEEDED,
+      );
+      response.headers.set("X-RateLimit-Limit", "20");
+      response.headers.set("X-RateLimit-Remaining", "0");
+      response.headers.set("X-RateLimit-Reset", rateLimit.resetTime.toString());
+      return setCorsHeaders(setSecurityHeaders(response));
+    }
+
+    // Add rate limit headers
+    const rateLimitHeaders = {
+      "X-RateLimit-Limit": "20",
+      "X-RateLimit-Remaining": rateLimit.remainingRequests.toString(),
+      "X-RateLimit-Reset": rateLimit.resetTime.toString(),
+    };
+
+    // Validate setup
+    const validation = validateDevSetup();
+    if (!validation.valid) {
+      logApiError(
+        new Error(validation.message),
+        "Configuration validation",
+        userId || undefined,
+      );
+      response = createErrorResponse(
+        `Configuration Error: ${validation.message}`,
+        500,
+        ApiErrorCode.INTERNAL_SERVER_ERROR,
+      );
+      return setCorsHeaders(setSecurityHeaders(response));
+    }
+
+    // Validate request body
+    const validationResult =
+      await validateRequest(multipleImagesSchema)(request);
+    if (validationResult.error) {
+      return setCorsHeaders(setSecurityHeaders(validationResult.error));
+    }
+
+    const validatedData = sanitizeObject(validationResult.data);
+    const { images, name, description } = validatedData;
 
     // Debug logging to check what data we're receiving from frontend
-    console.log("🔍 API analyze-images received:", {
+    console.log("🔍 API analyze-images received (validated):", {
       imagesCount: images?.length || 0,
       name,
       description,
-      nameType: typeof name,
-      descriptionType: typeof description,
     });
-
-    if (!images || !Array.isArray(images) || images.length === 0) {
-      return NextResponse.json(
-        { error: "Missing required field: images array" },
-        { status: 400 },
-      );
-    }
-
-    // Validate each image has required fields
-    for (const img of images) {
-      if (!img.base64 || !img.mimeType) {
-        return NextResponse.json(
-          { error: "Each image must have base64 and mimeType fields" },
-          { status: 400 },
-        );
-      }
-    }
 
     const result = await analyzeMultipleImages(images);
 
     if (!result.success) {
-      return NextResponse.json(
-        { error: result.error || "Failed to analyze images" },
-        { status: 500 },
+      logApiError(
+        new Error(result.error || "Multiple images analysis failed"),
+        "Multiple images analysis",
+        userId || undefined,
       );
+      response = createErrorResponse(
+        result.error || "Failed to analyze images",
+        500,
+        ApiErrorCode.EXTERNAL_API_ERROR,
+      );
+      Object.entries(rateLimitHeaders).forEach(([key, value]) => {
+        response.headers.set(key, value);
+      });
+      return setCorsHeaders(setSecurityHeaders(response));
     }
 
     // Save analysis to history
@@ -111,19 +167,38 @@ export async function POST(request: NextRequest) {
         },
       });
     } catch (dbError) {
-      console.error("Failed to save analysis history:", dbError);
+      logApiError(dbError, "Database save", userId || undefined);
       // Don't fail the request if history saving fails
     }
 
-    return NextResponse.json({
-      analysis: result.analysis,
-      success: true,
-    });
-  } catch (error) {
-    console.error("API Error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
+    response = createSuccessResponse(
+      {
+        analysis: result.analysis,
+      },
+      "Images analyzed successfully",
     );
+
+    Object.entries(rateLimitHeaders).forEach(([key, value]) => {
+      response.headers.set(key, value);
+    });
+
+    return setCorsHeaders(setSecurityHeaders(response));
+  } catch (error) {
+    logApiError(error, "Analyze images API", userId || undefined);
+    response = createErrorResponse(
+      "Internal server error",
+      500,
+      ApiErrorCode.INTERNAL_SERVER_ERROR,
+    );
+    return setCorsHeaders(setSecurityHeaders(response));
   }
+}
+
+// Handle preflight requests
+export async function OPTIONS(request: NextRequest) {
+  const response = new NextResponse(null, { status: 200 });
+  return setCorsHeaders(
+    setSecurityHeaders(response),
+    request.headers.get("origin") || undefined,
+  );
 }

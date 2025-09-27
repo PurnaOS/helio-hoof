@@ -9,10 +9,12 @@ export default function WaitlistPage() {
             Join the Waitlist
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-2">
-            Be the first to experience Helio-Hoof's advanced horse riding analysis
+            Be the first to experience Helio-Hoof's advanced horse riding
+            analysis
           </p>
           <p className="text-sm text-gray-500 dark:text-gray-500 mt-4">
-            We're currently in private beta. Join our waitlist to get early access!
+            We're currently in private beta. Join our waitlist to get early
+            access!
           </p>
         </div>
         <Waitlist

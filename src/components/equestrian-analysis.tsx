@@ -35,6 +35,25 @@ interface EquestrianAnalysisData {
   safety_observations: string;
 }
 
+interface ApiResponse {
+  is_show_jumping?: boolean;
+  message?: string;
+  rider_analysis?: {
+    overall_score?: number | string;
+    positives?: string[];
+    areas_for_improvement?: string[];
+    priority_focus?: string;
+  };
+  horse_analysis?: {
+    overall_score?: number | string;
+    positives?: string[];
+    technical_notes?: string[];
+    athletic_assessment?: string;
+  };
+  partnership_notes?: string;
+  safety_observations?: string;
+}
+
 interface EquestrianAnalysisProps {
   analysis: string;
   onReset: () => void;
@@ -234,9 +253,10 @@ export function EquestrianAnalysis({
 
       if (parsed && typeof parsed === "object") {
         // Check if this is a non-show jumping image
-        if (parsed.is_show_jumping === false) {
+        const apiResponse = parsed as ApiResponse;
+        if (apiResponse.is_show_jumping === false) {
           setParseError(
-            parsed.message ||
+            apiResponse.message ||
               "This image does not contain show jumping content suitable for analysis.",
           );
           return;
@@ -245,38 +265,42 @@ export function EquestrianAnalysis({
         // Create normalized structure with defaults for show jumping analysis
         const normalizedData: EquestrianAnalysisData = {
           rider_analysis: {
-            overall_score: Number(parsed.rider_analysis?.overall_score || 0),
-            positives: Array.isArray(parsed.rider_analysis?.positives)
-              ? parsed.rider_analysis.positives
+            overall_score: Number(
+              apiResponse.rider_analysis?.overall_score || 0,
+            ),
+            positives: Array.isArray(apiResponse.rider_analysis?.positives)
+              ? apiResponse.rider_analysis.positives
               : [],
             areas_for_improvement: Array.isArray(
-              parsed.rider_analysis?.areas_for_improvement,
+              apiResponse.rider_analysis?.areas_for_improvement,
             )
-              ? parsed.rider_analysis.areas_for_improvement
+              ? apiResponse.rider_analysis.areas_for_improvement
               : [],
             priority_focus:
-              parsed.rider_analysis?.priority_focus ||
+              apiResponse.rider_analysis?.priority_focus ||
               "Focus on core fundamentals and position.",
           },
           horse_analysis: {
-            overall_score: Number(parsed.horse_analysis?.overall_score || 0),
-            positives: Array.isArray(parsed.horse_analysis?.positives)
-              ? parsed.horse_analysis.positives
+            overall_score: Number(
+              apiResponse.horse_analysis?.overall_score || 0,
+            ),
+            positives: Array.isArray(apiResponse.horse_analysis?.positives)
+              ? apiResponse.horse_analysis.positives
               : [],
             technical_notes: Array.isArray(
-              parsed.horse_analysis?.technical_notes,
+              apiResponse.horse_analysis?.technical_notes,
             )
-              ? parsed.horse_analysis.technical_notes
+              ? apiResponse.horse_analysis.technical_notes
               : [],
             athletic_assessment:
-              parsed.horse_analysis?.athletic_assessment ||
+              apiResponse.horse_analysis?.athletic_assessment ||
               "Good overall athletic ability.",
           },
           partnership_notes:
-            parsed.partnership_notes ||
+            apiResponse.partnership_notes ||
             "Good partnership between horse and rider.",
           safety_observations:
-            parsed.safety_observations || "No safety concerns observed.",
+            apiResponse.safety_observations || "No safety concerns observed.",
         };
 
         setParsedData(normalizedData);
@@ -331,7 +355,7 @@ export function EquestrianAnalysis({
               .replace(/[^a-z0-9]+/g, "-")
               .replace(/^-|-$/g, "")
           : "equestrian-single-image-analysis",
-        analysis: parsedData,
+        analysis: parsedData || ({} as EquestrianAnalysisData),
         images: pdfImages,
       });
     } catch (error) {

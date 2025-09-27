@@ -45,6 +45,15 @@ interface MultiImageAnalysisData {
   safety_observations: string;
 }
 
+interface MultiImageApiResponse {
+  all_show_jumping?: boolean;
+  show_jumping_count?: number;
+  individual_analyses?: IndividualAnalysis[];
+  comparative_analysis?: ComparativeAnalysis;
+  partnership_evaluation?: string;
+  safety_observations?: string;
+}
+
 interface MultiImageAnalysisProps {
   analysis: string;
   uploadedImages: UploadedImage[];
@@ -188,16 +197,28 @@ export function MultiImageAnalysis({
         // Strategy 2: Extract JSON from text using regex
         const jsonMatch = analysis.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
-          jsonStr = jsonMatch[0];
-          parsed = JSON.parse(jsonStr);
-        } else {
-          // Strategy 3: Look for JSON between code blocks or markers
+          try {
+            jsonStr = jsonMatch[0];
+            parsed = JSON.parse(jsonStr);
+          } catch (parseError) {
+            console.log("Strategy 2 failed to parse matched JSON:", parseError);
+            // Continue to strategy 3
+          }
+        }
+
+        // Strategy 3: Look for JSON between code blocks or markers (only if strategy 2 failed)
+        if (!parsed) {
           const codeBlockMatch = analysis.match(
             /```(?:json)?\s*(\{[\s\S]*?\})\s*```/i,
           );
           if (codeBlockMatch) {
-            jsonStr = codeBlockMatch[1];
-            parsed = JSON.parse(jsonStr);
+            try {
+              jsonStr = codeBlockMatch[1];
+              parsed = JSON.parse(jsonStr);
+            } catch (parseError) {
+              console.log("Strategy 3 failed to parse matched JSON:", parseError);
+              // All strategies failed, will be handled by outer error handling
+            }
           }
         }
       }
@@ -208,8 +229,9 @@ export function MultiImageAnalysis({
         console.log("Multi-image: Data keys:", Object.keys(parsed));
 
         // Check if this contains non-show jumping images
-        if (parsed.all_show_jumping === false) {
-          const validCount = parsed.show_jumping_count || 0;
+        const apiResponse = parsed as MultiImageApiResponse;
+        if (apiResponse.all_show_jumping === false) {
+          const validCount = apiResponse.show_jumping_count || 0;
           const totalImages = uploadedImages?.length || 0;
           const invalidCount = totalImages - validCount;
 
@@ -227,15 +249,15 @@ export function MultiImageAnalysis({
 
         // Validate that the parsed data has the expected structure for show jumping analysis
         if (
-          (Array.isArray(parsed.individual_analyses) &&
-            parsed.individual_analyses.length > 0 &&
-            parsed.comparative_analysis &&
-            typeof parsed.comparative_analysis === "object") ||
-          (parsed.all_show_jumping === false &&
-            Array.isArray(parsed.individual_analyses))
+          (Array.isArray(apiResponse.individual_analyses) &&
+            apiResponse.individual_analyses.length > 0 &&
+            apiResponse.comparative_analysis &&
+            typeof apiResponse.comparative_analysis === "object") ||
+          (apiResponse.all_show_jumping === false &&
+            Array.isArray(apiResponse.individual_analyses))
         ) {
-          setParsedData(parsed);
-          if (parsed.all_show_jumping !== false) {
+          setParsedData(parsed as MultiImageAnalysisData);
+          if (apiResponse.all_show_jumping !== false) {
             setParseError("");
           }
         } else {
@@ -264,6 +286,17 @@ export function MultiImageAnalysis({
       console.error("Parse error:", error);
     }
   }, [analysis, uploadedImages?.length]);
+
+  // Cleanup blob URLs when component unmounts
+  React.useEffect(() => {
+    return () => {
+      uploadedImages.forEach((image) => {
+        if (image.previewUrl.startsWith('blob:')) {
+          URL.revokeObjectURL(image.previewUrl);
+        }
+      });
+    };
+  }, [uploadedImages]);
 
   const copyToClipboard = async () => {
     try {
@@ -316,7 +349,7 @@ export function MultiImageAnalysis({
               .replace(/[^a-z0-9]+/g, "-")
               .replace(/^-|-$/g, "")
           : "equestrian-multi-image-analysis",
-        analysis: parsedData,
+        analysis: parsedData || ({} as MultiImageAnalysisData),
         images: pdfImages,
         isMultiImage: true,
       });
@@ -359,22 +392,25 @@ export function MultiImageAnalysis({
                   </>
                 )}
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleExportPDF}
-                disabled={isExporting}
-                className="flex items-center gap-2"
-              >
-                {isExporting ? (
-                  "Generating PDF..."
-                ) : (
-                  <>
-                    <Download className="h-4 w-4" />
-                    Download PDF
-                  </>
-                )}
-              </Button>
+              <div className="flex gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportPDF}
+                  disabled={isExporting}
+                  className="flex items-center gap-2"
+                >
+                  {isExporting ? (
+                    "Generating PDF..."
+                  ) : (
+                    <>
+                      <Download className="h-4 w-4" />
+                      Download PDF
+                    </>
+                  )}
+                </Button>
+                {/* Cancel export functionality not implemented */}
+              </div>
               {showResetButton && (
                 <Button variant="outline" size="sm" onClick={onReset}>
                   Analyze More Images
