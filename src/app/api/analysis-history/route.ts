@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
+import { desc, eq } from "drizzle-orm";
+import { type NextRequest, NextResponse } from "next/server";
 import { db, schema } from "@/lib/db";
-import { eq, desc } from "drizzle-orm";
 
 // GET - Retrieve user's analysis history
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const { userId } = await auth();
 
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     console.error("Error fetching analysis history:", error);
     return NextResponse.json(
       { error: "Failed to fetch analysis history" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     if (!analysisType || !analysisResult || !images) {
       return NextResponse.json(
         { error: "Missing required fields" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -62,13 +62,13 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      analysis: newAnalysis[0]
+      analysis: newAnalysis[0],
     });
   } catch (error) {
     console.error("Error saving analysis history:", error);
     return NextResponse.json(
       { error: "Failed to save analysis" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

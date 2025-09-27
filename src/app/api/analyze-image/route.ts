@@ -1,8 +1,8 @@
-import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { analyzeImage } from "@/lib/anthropic";
-import { logDevConfig, validateDevSetup } from "@/lib/dev-config";
 import { db, schema } from "@/lib/db";
+import { logDevConfig, validateDevSetup } from "@/lib/dev-config";
 
 export async function POST(request: NextRequest) {
   // Log development configuration
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     const { imageBase64, mimeType, filename, size, name, description } = body;
 
     // Debug logging to check what data we're receiving from frontend
-    console.log('🔍 API analyze-image received:', {
+    console.log("🔍 API analyze-image received:", {
       hasImageBase64: !!imageBase64,
       mimeType,
       filename,
@@ -69,10 +69,12 @@ export async function POST(request: NextRequest) {
       };
 
       // Handle name and description more explicitly
-      const finalName = (name && name.trim()) ? name.trim() : `Single Image Analysis - ${new Date().toLocaleDateString()}`;
-      const finalDescription = (description && description.trim()) ? description.trim() : null;
+      const finalName = name?.trim()
+        ? name.trim()
+        : `Single Image Analysis - ${new Date().toLocaleDateString()}`;
+      const finalDescription = description?.trim() ? description.trim() : null;
 
-      console.log('🔍 Database insertion values:', {
+      console.log("🔍 Database insertion values:", {
         name: name,
         nameType: typeof name,
         finalName,

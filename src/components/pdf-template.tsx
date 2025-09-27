@@ -1,6 +1,6 @@
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import React from "react";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface AnalysisData {
   rider_analysis: {
@@ -162,19 +162,23 @@ const PDFTemplate = React.forwardRef<HTMLDivElement, PDFTemplateProps>(
             <Card className="pdf-card avoid-break mb-8">
               <CardHeader>
                 <CardTitle className="text-xl flex items-center gap-2">
-                  📸 Analyzed Image{images.length > 1 ? 's' : ''}
+                  📸 Analyzed Image{images.length > 1 ? "s" : ""}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-6">
                   {images.map((image, index) => (
-                    <div key={index} className="avoid-break">
+                    <div
+                      key={image.filename || `image-${index}`}
+                      className="avoid-break"
+                    >
                       <p className="text-sm font-medium mb-3">
                         {image.filename || `Image ${index + 1}`}
                       </p>
+                      {/* biome-ignore lint/performance/noImgElement: Required for PDF generation */}
                       <img
                         src={`data:${image.mimeType};base64,${image.base64}`}
-                        alt={`Analysis image ${index + 1}`}
+                        alt={`Analysis ${index + 1}`}
                         className="analysis-image max-w-4xl"
                       />
                     </div>
@@ -187,18 +191,24 @@ const PDFTemplate = React.forwardRef<HTMLDivElement, PDFTemplateProps>(
           {/* Performance Scores */}
           <Card className="pdf-card avoid-break">
             <CardHeader>
-              <CardTitle className="text-xl">⭐ Overall Assessment Ratings</CardTitle>
+              <CardTitle className="text-xl">
+                ⭐ Overall Assessment Ratings
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-8">
                 <div className="text-center">
-                  <p className="font-semibold mb-3 text-lg">Rider Performance</p>
+                  <p className="font-semibold mb-3 text-lg">
+                    Rider Performance
+                  </p>
                   <Badge className="score-badge text-xl px-6 py-3">
                     {analysis.rider_analysis.overall_score}/10
                   </Badge>
                 </div>
                 <div className="text-center">
-                  <p className="font-semibold mb-3 text-lg">Horse Performance</p>
+                  <p className="font-semibold mb-3 text-lg">
+                    Horse Performance
+                  </p>
                   <Badge className="score-badge text-xl px-6 py-3">
                     {analysis.horse_analysis.overall_score}/10
                   </Badge>
@@ -215,27 +225,43 @@ const PDFTemplate = React.forwardRef<HTMLDivElement, PDFTemplateProps>(
             <CardContent className="space-y-6">
               {/* Positives */}
               <div className="avoid-break">
-                <h3 className="font-semibold positive-text text-lg mb-3">✓ Positives</h3>
+                <h3 className="font-semibold positive-text text-lg mb-3">
+                  ✓ Positives
+                </h3>
                 <ul className="space-y-2">
-                  {analysis.rider_analysis.positives.map((positive, index) => (
-                    <li key={index} className="text-sm pl-2">• {positive}</li>
+                  {analysis.rider_analysis.positives.map((positive) => (
+                    <li
+                      key={`positive-${positive.slice(0, 50)}-${positive.length}`}
+                      className="text-sm pl-2"
+                    >
+                      • {positive}
+                    </li>
                   ))}
                 </ul>
               </div>
 
               {/* Areas for Improvement */}
               <div className="avoid-break">
-                <h3 className="font-semibold improvement-text text-lg mb-3">⚠ Areas for Improvement</h3>
+                <h3 className="font-semibold improvement-text text-lg mb-3">
+                  ⚠ Areas for Improvement
+                </h3>
                 <ul className="space-y-2">
-                  {analysis.rider_analysis.areas_for_improvement.map((area, index) => (
-                    <li key={index} className="text-sm pl-2">• {area}</li>
+                  {analysis.rider_analysis.areas_for_improvement.map((area) => (
+                    <li
+                      key={`improvement-${area.slice(0, 50)}-${area.length}`}
+                      className="text-sm pl-2"
+                    >
+                      • {area}
+                    </li>
                   ))}
                 </ul>
               </div>
 
               {/* Priority Focus */}
               <div className="avoid-break">
-                <h3 className="font-semibold priority-text text-lg mb-3">🎯 Priority Focus</h3>
+                <h3 className="font-semibold priority-text text-lg mb-3">
+                  🎯 Priority Focus
+                </h3>
                 <div className="section-bg-blue p-4 rounded">
                   <p className="text-sm leading-relaxed">
                     {analysis.rider_analysis.priority_focus}
@@ -253,27 +279,43 @@ const PDFTemplate = React.forwardRef<HTMLDivElement, PDFTemplateProps>(
             <CardContent className="space-y-6">
               {/* Positives */}
               <div className="avoid-break">
-                <h3 className="font-semibold positive-text text-lg mb-3">✓ Positives</h3>
+                <h3 className="font-semibold positive-text text-lg mb-3">
+                  ✓ Positives
+                </h3>
                 <ul className="space-y-2">
-                  {analysis.horse_analysis.positives.map((positive, index) => (
-                    <li key={index} className="text-sm pl-2">• {positive}</li>
+                  {analysis.horse_analysis.positives.map((positive) => (
+                    <li
+                      key={`horse-positive-${positive.slice(0, 50)}-${positive.length}`}
+                      className="text-sm pl-2"
+                    >
+                      • {positive}
+                    </li>
                   ))}
                 </ul>
               </div>
 
               {/* Technical Notes */}
               <div className="avoid-break">
-                <h3 className="font-semibold text-lg mb-3">🔧 Technical Notes</h3>
+                <h3 className="font-semibold text-lg mb-3">
+                  🔧 Technical Notes
+                </h3>
                 <ul className="space-y-2">
-                  {analysis.horse_analysis.technical_notes.map((note, index) => (
-                    <li key={index} className="text-sm pl-2">• {note}</li>
+                  {analysis.horse_analysis.technical_notes.map((note) => (
+                    <li
+                      key={`technical-${note.slice(0, 50)}-${note.length}`}
+                      className="text-sm pl-2"
+                    >
+                      • {note}
+                    </li>
                   ))}
                 </ul>
               </div>
 
               {/* Athletic Assessment */}
               <div className="avoid-break">
-                <h3 className="font-semibold text-lg mb-3">🏃 Athletic Assessment</h3>
+                <h3 className="font-semibold text-lg mb-3">
+                  🏃 Athletic Assessment
+                </h3>
                 <div className="section-bg-gray p-4 rounded">
                   <p className="text-sm leading-relaxed">
                     {analysis.horse_analysis.athletic_assessment}
@@ -290,7 +332,9 @@ const PDFTemplate = React.forwardRef<HTMLDivElement, PDFTemplateProps>(
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="avoid-break">
-                <h3 className="font-semibold text-lg mb-3">Partnership Evaluation</h3>
+                <h3 className="font-semibold text-lg mb-3">
+                  Partnership Evaluation
+                </h3>
                 <div className="section-bg-green p-4 rounded">
                   <p className="text-sm leading-relaxed">
                     {analysis.partnership_notes}
@@ -299,7 +343,9 @@ const PDFTemplate = React.forwardRef<HTMLDivElement, PDFTemplateProps>(
               </div>
 
               <div className="avoid-break">
-                <h3 className="font-semibold text-lg mb-3">Safety Observations</h3>
+                <h3 className="font-semibold text-lg mb-3">
+                  Safety Observations
+                </h3>
                 <div className="section-bg-yellow p-4 rounded">
                   <p className="text-sm leading-relaxed">
                     {analysis.safety_observations}
@@ -316,9 +362,9 @@ const PDFTemplate = React.forwardRef<HTMLDivElement, PDFTemplateProps>(
         </div>
       </div>
     );
-  }
+  },
 );
 
-PDFTemplate.displayName = 'PDFTemplate';
+PDFTemplate.displayName = "PDFTemplate";
 
 export default PDFTemplate;

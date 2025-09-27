@@ -1,10 +1,10 @@
 import { neon } from "@neondatabase/serverless";
+import { eq, isNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/neon-http";
 import { analysisHistory } from "../src/lib/db/schema";
-import { isNull, eq } from "drizzle-orm";
 
 // Connect to database
-const connectionString = process.env.DATABASE_URL!;
+const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
   throw new Error("DATABASE_URL environment variable is required");
 }
@@ -33,7 +33,7 @@ const dummyNames = {
     "Performance Consistency Review",
     "Improvement Tracking Study",
     "Comprehensive Skills Assessment",
-  ]
+  ],
 };
 
 const dummyDescriptions = [
@@ -72,7 +72,7 @@ async function updateExistingRecords() {
 
     for (let i = 0; i < recordsWithoutNames.length; i++) {
       const record = recordsWithoutNames[i];
-      const analysisType = record.analysisType as 'single' | 'multi';
+      const analysisType = record.analysisType as "single" | "multi";
 
       // Get appropriate dummy names array
       const names = dummyNames[analysisType] || dummyNames.single;
@@ -94,11 +94,14 @@ async function updateExistingRecords() {
         })
         .where(eq(analysisHistory.id, record.id));
 
-      console.log(`✅ Updated record ${i + 1}/${recordsWithoutNames.length}: "${name}"`);
+      console.log(
+        `✅ Updated record ${i + 1}/${recordsWithoutNames.length}: "${name}"`,
+      );
     }
 
-    console.log("🎉 Successfully updated all records with dummy names and descriptions!");
-
+    console.log(
+      "🎉 Successfully updated all records with dummy names and descriptions!",
+    );
   } catch (error) {
     console.error("❌ Error updating records:", error);
     throw error;

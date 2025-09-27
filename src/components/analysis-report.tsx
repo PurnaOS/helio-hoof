@@ -1,8 +1,8 @@
 "use client";
 
 import { EquestrianAnalysis } from "@/components/equestrian-analysis";
-import { MultiImageAnalysis } from "@/components/multi-image-analysis";
 import type { UploadedImage } from "@/components/image-upload";
+import { MultiImageAnalysis } from "@/components/multi-image-analysis";
 
 interface AnalysisReportProps {
   analysis: string;
@@ -33,11 +33,10 @@ export function AnalysisReport({
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
         return (
-          !!parsed.individual_analyses &&
-          Array.isArray(parsed.individual_analyses)
-        ) || (
-          !!parsed.all_show_jumping &&
-          typeof parsed.all_show_jumping === 'boolean'
+          (!!parsed.individual_analyses &&
+            Array.isArray(parsed.individual_analyses)) ||
+          (!!parsed.all_show_jumping &&
+            typeof parsed.all_show_jumping === "boolean")
         );
       }
     } catch {

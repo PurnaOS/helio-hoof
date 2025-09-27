@@ -1,10 +1,10 @@
 import {
+  integer,
+  jsonb,
   pgTable,
   text,
   timestamp,
   uuid,
-  integer,
-  jsonb,
 } from "drizzle-orm/pg-core";
 
 // Analysis history table
@@ -16,18 +16,22 @@ export const analysisHistory = pgTable("analysis_history", {
   analysisType: text("analysis_type").notNull(), // 'single' or 'multi'
   imageCount: integer("image_count").default(1),
   analysisResult: text("analysis_result").notNull(), // The AI analysis text
-  images: jsonb("images").$type<{
-    id: string;
-    filename: string;
-    size: number;
-    type: string;
-    base64Data?: string; // Base64 encoded image data for reconstruction
-    url?: string; // Optional - for future image storage
-  }[]>().notNull(), // Metadata and data about uploaded images
+  images: jsonb("images")
+    .$type<
+      {
+        id: string;
+        filename: string;
+        size: number;
+        type: string;
+        base64Data?: string; // Base64 encoded image data for reconstruction
+        url?: string; // Optional - for future image storage
+      }[]
+    >()
+    .notNull(), // Metadata and data about uploaded images
   metadata: jsonb("metadata").$type<{
     processingTime?: number;
     model?: string;
-    [key: string]: any;
+    [key: string]: string | number | boolean | null | undefined;
   }>(), // Additional metadata
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow(),
 });

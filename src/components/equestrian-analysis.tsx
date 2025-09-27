@@ -4,19 +4,19 @@ import {
   CheckCircle2,
   Copy,
   Download,
+  Image as ImageIcon,
   Shield,
   Star,
   Target,
   Users,
-  Image as ImageIcon,
 } from "lucide-react";
 import Image from "next/image";
 import React, { useState } from "react";
+import type { UploadedImage } from "@/components/image-upload";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { exportToEnhancedPDF } from "@/lib/enhanced-pdf-export";
 import { convertToBase64 } from "@/lib/utils";
-import type { UploadedImage } from "@/components/image-upload";
 
 interface EquestrianAnalysisData {
   rider_analysis: {
@@ -73,56 +73,64 @@ function AnalysisSection({
 }) {
   // Different gradient colors for different sections
   const getGradientColors = (title: string) => {
-    if (title.includes('Rider')) {
+    if (title.includes("Rider")) {
       return {
-        bg: 'from-rose-50 to-pink-50 dark:from-rose-950 dark:to-pink-950',
-        border: 'border-rose-200 dark:border-rose-800',
-        iconBg: 'from-rose-500 to-pink-500',
-        textColor: 'text-rose-600 dark:text-rose-400'
+        bg: "from-rose-50 to-pink-50 dark:from-rose-950 dark:to-pink-950",
+        border: "border-rose-200 dark:border-rose-800",
+        iconBg: "from-rose-500 to-pink-500",
+        textColor: "text-rose-600 dark:text-rose-400",
       };
-    } else if (title.includes('Horse')) {
+    } else if (title.includes("Horse")) {
       return {
-        bg: 'from-amber-50 to-orange-50 dark:from-amber-950 dark:to-orange-950',
-        border: 'border-amber-200 dark:border-amber-800',
-        iconBg: 'from-amber-500 to-orange-500',
-        textColor: 'text-amber-600 dark:text-amber-400'
+        bg: "from-amber-50 to-orange-50 dark:from-amber-950 dark:to-orange-950",
+        border: "border-amber-200 dark:border-amber-800",
+        iconBg: "from-amber-500 to-orange-500",
+        textColor: "text-amber-600 dark:text-amber-400",
       };
-    } else if (title.includes('Partnership')) {
+    } else if (title.includes("Partnership")) {
       return {
-        bg: 'from-purple-50 to-violet-50 dark:from-purple-950 dark:to-violet-950',
-        border: 'border-purple-200 dark:border-purple-800',
-        iconBg: 'from-purple-500 to-violet-500',
-        textColor: 'text-purple-600 dark:text-purple-400'
+        bg: "from-purple-50 to-violet-50 dark:from-purple-950 dark:to-violet-950",
+        border: "border-purple-200 dark:border-purple-800",
+        iconBg: "from-purple-500 to-violet-500",
+        textColor: "text-purple-600 dark:text-purple-400",
       };
-    } else if (title.includes('Safety')) {
+    } else if (title.includes("Safety")) {
       return {
-        bg: 'from-red-50 to-rose-50 dark:from-red-950 dark:to-rose-950',
-        border: 'border-red-200 dark:border-red-800',
-        iconBg: 'from-red-500 to-rose-500',
-        textColor: 'text-red-600 dark:text-red-400'
+        bg: "from-red-50 to-rose-50 dark:from-red-950 dark:to-rose-950",
+        border: "border-red-200 dark:border-red-800",
+        iconBg: "from-red-500 to-rose-500",
+        textColor: "text-red-600 dark:text-red-400",
       };
     }
     // Default
     return {
-      bg: 'from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950',
-      border: 'border-blue-200 dark:border-blue-800',
-      iconBg: 'from-blue-500 to-indigo-500',
-      textColor: 'text-blue-600 dark:text-blue-400'
+      bg: "from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950",
+      border: "border-blue-200 dark:border-blue-800",
+      iconBg: "from-blue-500 to-indigo-500",
+      textColor: "text-blue-600 dark:text-blue-400",
     };
   };
 
   const colors = getGradientColors(title);
 
   return (
-    <Card className={`bg-gradient-to-br ${colors.bg} ${colors.border} shadow-lg`}>
+    <Card
+      className={`bg-gradient-to-br ${colors.bg} ${colors.border} shadow-lg`}
+    >
       <CardHeader className="pb-4">
         <CardTitle className="flex items-center gap-3 text-lg">
-          <div className={`w-9 h-9 bg-gradient-to-r ${colors.iconBg} rounded-lg flex items-center justify-center shadow-md`}>
+          <div
+            className={`w-9 h-9 bg-gradient-to-r ${colors.iconBg} rounded-lg flex items-center justify-center shadow-md`}
+          >
             <Icon className="h-4 w-4 text-white" />
           </div>
           <div>
-            <span className="font-bold text-gray-800 dark:text-gray-200">{title}</span>
-            <div className={`h-1 w-16 bg-gradient-to-r ${colors.iconBg} rounded-full mt-1`}></div>
+            <span className="font-bold text-gray-800 dark:text-gray-200">
+              {title}
+            </span>
+            <div
+              className={`h-1 w-16 bg-gradient-to-r ${colors.iconBg} rounded-full mt-1`}
+            ></div>
           </div>
         </CardTitle>
       </CardHeader>
@@ -153,10 +161,13 @@ export function EquestrianAnalysis({
   // Parse JSON from analysis on component mount
   React.useEffect(() => {
     try {
-      let parsed: any = null;
+      let parsed: unknown = null;
 
       // Log the raw analysis for debugging
-      console.log("🔍 Raw analysis received:", analysis.substring(0, 300) + (analysis.length > 300 ? "..." : ""));
+      console.log(
+        "🔍 Raw analysis received:",
+        analysis.substring(0, 300) + (analysis.length > 300 ? "..." : ""),
+      );
 
       // Try parsing entire response as JSON first
       try {
@@ -169,36 +180,53 @@ export function EquestrianAnalysis({
         if (jsonMatch) {
           try {
             console.log("Found JSON match, attempting to parse...");
-            console.log("JSON match preview:", jsonMatch[0].substring(0, 200) + "...");
+            console.log(
+              "JSON match preview:",
+              `${jsonMatch[0].substring(0, 200)}...`,
+            );
 
             // Try to clean up common JSON issues
             let cleanJson = jsonMatch[0];
 
             // Remove trailing commas before closing brackets/braces
-            cleanJson = cleanJson.replace(/,(\s*[}\]])/g, '$1');
+            cleanJson = cleanJson.replace(/,(\s*[}\]])/g, "$1");
 
             // Try parsing the cleaned JSON
             parsed = JSON.parse(cleanJson);
           } catch (secondError) {
             console.error("Second JSON parse failed:", secondError);
             console.log("Raw analysis text length:", analysis.length);
-            console.log("Raw analysis preview:", analysis.substring(0, 300) + "...");
+            console.log(
+              "Raw analysis preview:",
+              `${analysis.substring(0, 300)}...`,
+            );
             console.log("JSON match length:", jsonMatch[0].length);
-            console.log("JSON match preview:", jsonMatch[0].substring(0, 300) + "...");
-            setParseError(`Failed to parse analysis data: ${secondError instanceof Error ? secondError.message : 'Unknown error'}`);
+            console.log(
+              "JSON match preview:",
+              `${jsonMatch[0].substring(0, 300)}...`,
+            );
+            setParseError(
+              `Failed to parse analysis data: ${secondError instanceof Error ? secondError.message : "Unknown error"}`,
+            );
             return;
           }
         } else {
           console.error("No JSON structure found in analysis text");
-          console.log("Analysis text:", analysis.substring(0, 300) + "...");
+          console.log("Analysis text:", `${analysis.substring(0, 300)}...`);
 
           // Check if this looks like an error message
-          if (analysis.toLowerCase().includes('internal server error') ||
-              analysis.toLowerCase().includes('error') ||
-              analysis.toLowerCase().includes('failed')) {
-            setParseError("Analysis service temporarily unavailable. Please try again in a moment.");
+          if (
+            analysis.toLowerCase().includes("internal server error") ||
+            analysis.toLowerCase().includes("error") ||
+            analysis.toLowerCase().includes("failed")
+          ) {
+            setParseError(
+              "Analysis service temporarily unavailable. Please try again in a moment.",
+            );
           } else {
-            setParseError("The analysis response could not be processed. Please try uploading your image again.");
+            setParseError(
+              "The analysis response could not be processed. Please try uploading your image again.",
+            );
           }
           return;
         }
@@ -207,7 +235,10 @@ export function EquestrianAnalysis({
       if (parsed && typeof parsed === "object") {
         // Check if this is a non-show jumping image
         if (parsed.is_show_jumping === false) {
-          setParseError(parsed.message || "This image does not contain show jumping content suitable for analysis.");
+          setParseError(
+            parsed.message ||
+              "This image does not contain show jumping content suitable for analysis.",
+          );
           return;
         }
 
@@ -215,18 +246,37 @@ export function EquestrianAnalysis({
         const normalizedData: EquestrianAnalysisData = {
           rider_analysis: {
             overall_score: Number(parsed.rider_analysis?.overall_score || 0),
-            positives: Array.isArray(parsed.rider_analysis?.positives) ? parsed.rider_analysis.positives : [],
-            areas_for_improvement: Array.isArray(parsed.rider_analysis?.areas_for_improvement) ? parsed.rider_analysis.areas_for_improvement : [],
-            priority_focus: parsed.rider_analysis?.priority_focus || "Focus on core fundamentals and position.",
+            positives: Array.isArray(parsed.rider_analysis?.positives)
+              ? parsed.rider_analysis.positives
+              : [],
+            areas_for_improvement: Array.isArray(
+              parsed.rider_analysis?.areas_for_improvement,
+            )
+              ? parsed.rider_analysis.areas_for_improvement
+              : [],
+            priority_focus:
+              parsed.rider_analysis?.priority_focus ||
+              "Focus on core fundamentals and position.",
           },
           horse_analysis: {
             overall_score: Number(parsed.horse_analysis?.overall_score || 0),
-            positives: Array.isArray(parsed.horse_analysis?.positives) ? parsed.horse_analysis.positives : [],
-            technical_notes: Array.isArray(parsed.horse_analysis?.technical_notes) ? parsed.horse_analysis.technical_notes : [],
-            athletic_assessment: parsed.horse_analysis?.athletic_assessment || "Good overall athletic ability.",
+            positives: Array.isArray(parsed.horse_analysis?.positives)
+              ? parsed.horse_analysis.positives
+              : [],
+            technical_notes: Array.isArray(
+              parsed.horse_analysis?.technical_notes,
+            )
+              ? parsed.horse_analysis.technical_notes
+              : [],
+            athletic_assessment:
+              parsed.horse_analysis?.athletic_assessment ||
+              "Good overall athletic ability.",
           },
-          partnership_notes: parsed.partnership_notes || "Good partnership between horse and rider.",
-          safety_observations: parsed.safety_observations || "No safety concerns observed.",
+          partnership_notes:
+            parsed.partnership_notes ||
+            "Good partnership between horse and rider.",
+          safety_observations:
+            parsed.safety_observations || "No safety concerns observed.",
         };
 
         setParsedData(normalizedData);
@@ -239,7 +289,6 @@ export function EquestrianAnalysis({
       console.error("Parse error:", error);
     }
   }, [analysis]);
-
 
   const copyToClipboard = async () => {
     try {
@@ -267,7 +316,7 @@ export function EquestrianAnalysis({
             pdfImages.push({
               base64,
               filename: img.filename || img.file?.name,
-              mimeType: img.mimeType || img.file?.type
+              mimeType: img.mimeType || img.file?.type,
             });
           }
         }
@@ -276,9 +325,14 @@ export function EquestrianAnalysis({
       await exportToEnhancedPDF({
         title: name || "Equestrian Analysis Report",
         subtitle: description || "Single Image Analysis Results",
-        filename: name ? name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') : "equestrian-single-image-analysis",
+        filename: name
+          ? name
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, "-")
+              .replace(/^-|-$/g, "")
+          : "equestrian-single-image-analysis",
         analysis: parsedData,
-        images: pdfImages
+        images: pdfImages,
       });
     } catch (error) {
       console.error("Failed to export PDF:", error);
@@ -345,7 +399,6 @@ export function EquestrianAnalysis({
           </CardHeader>
         </Card>
 
-
         {/* PDF Export Content */}
         <div id="single-analysis-content">
           {/* Image Display */}
@@ -365,12 +418,13 @@ export function EquestrianAnalysis({
                     width={800}
                     height={600}
                     className="w-full h-auto rounded-lg shadow-md object-contain"
-                    style={{ maxHeight: '500px' }}
+                    style={{ maxHeight: "500px" }}
                   />
                   <div className="mt-3 text-center">
                     <div className="inline-flex items-center px-3 py-1 rounded-full text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
                       <ImageIcon className="h-3 w-3 mr-1" />
-                      {uploadedImages[0].file.name} ({(uploadedImages[0].file.size / 1024).toFixed(1)} KB)
+                      {uploadedImages[0].file.name} (
+                      {(uploadedImages[0].file.size / 1024).toFixed(1)} KB)
                     </div>
                   </div>
                 </div>
@@ -381,41 +435,58 @@ export function EquestrianAnalysis({
           {/* Analysis Content */}
           <AnalysisSection title="Analysis Results" icon={Target}>
             {parseError && (
-              <div className={`border rounded-lg p-4 mb-6 ${
-                parseError.includes('show jumping content') || parseError.includes('Helio-Hoof analyzer')
-                  ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
-                  : 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'
-              }`}>
+              <div
+                className={`border rounded-lg p-4 mb-6 ${
+                  parseError.includes("show jumping content") ||
+                  parseError.includes("Helio-Hoof analyzer")
+                    ? "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800"
+                    : "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800"
+                }`}
+              >
                 <div className="flex items-start gap-3">
                   <div className="flex-shrink-0">
-                    <div className={`w-5 h-5 rounded-full flex items-center justify-center ${
-                      parseError.includes('show jumping content') || parseError.includes('Helio-Hoof analyzer')
-                        ? 'bg-blue-500'
-                        : 'bg-amber-500'
-                    }`}>
+                    <div
+                      className={`w-5 h-5 rounded-full flex items-center justify-center ${
+                        parseError.includes("show jumping content") ||
+                        parseError.includes("Helio-Hoof analyzer")
+                          ? "bg-blue-500"
+                          : "bg-amber-500"
+                      }`}
+                    >
                       <span className="text-white text-xs font-bold">
-                        {parseError.includes('show jumping content') || parseError.includes('Helio-Hoof analyzer') ? 'i' : '!'}
+                        {parseError.includes("show jumping content") ||
+                        parseError.includes("Helio-Hoof analyzer")
+                          ? "i"
+                          : "!"}
                       </span>
                     </div>
                   </div>
                   <div>
-                    <h4 className={`font-medium mb-1 ${
-                      parseError.includes('show jumping content') || parseError.includes('Helio-Hoof analyzer')
-                        ? 'text-blue-800 dark:text-blue-200'
-                        : 'text-amber-800 dark:text-amber-200'
-                    }`}>
-                      {parseError.includes('show jumping content') || parseError.includes('Helio-Hoof analyzer')
-                        ? 'Invalid Image Type'
-                        : 'Alternative Format Detected'}
+                    <h4
+                      className={`font-medium mb-1 ${
+                        parseError.includes("show jumping content") ||
+                        parseError.includes("Helio-Hoof analyzer")
+                          ? "text-blue-800 dark:text-blue-200"
+                          : "text-amber-800 dark:text-amber-200"
+                      }`}
+                    >
+                      {parseError.includes("show jumping content") ||
+                      parseError.includes("Helio-Hoof analyzer")
+                        ? "Invalid Image Type"
+                        : "Alternative Format Detected"}
                     </h4>
-                    <p className={`text-sm ${
-                      parseError.includes('show jumping content') || parseError.includes('Helio-Hoof analyzer')
-                        ? 'text-blue-700 dark:text-blue-300'
-                        : 'text-amber-700 dark:text-amber-300'
-                    }`}>
-                      {parseError.includes('show jumping content') || parseError.includes('Helio-Hoof analyzer')
+                    <p
+                      className={`text-sm ${
+                        parseError.includes("show jumping content") ||
+                        parseError.includes("Helio-Hoof analyzer")
+                          ? "text-blue-700 dark:text-blue-300"
+                          : "text-amber-700 dark:text-amber-300"
+                      }`}
+                    >
+                      {parseError.includes("show jumping content") ||
+                      parseError.includes("Helio-Hoof analyzer")
                         ? parseError
-                        : 'The analysis was returned in an unstructured format. The complete response is displayed below.'}
+                        : "The analysis was returned in an unstructured format. The complete response is displayed below."}
                     </p>
                   </div>
                 </div>
@@ -423,7 +494,11 @@ export function EquestrianAnalysis({
             )}
 
             {/* Only show raw response if it's not a validation error */}
-            {!(parseError && (parseError.includes('show jumping content') || parseError.includes('Helio-Hoof analyzer'))) && (
+            {!(
+              parseError &&
+              (parseError.includes("show jumping content") ||
+                parseError.includes("Helio-Hoof analyzer"))
+            ) && (
               <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
                 <div className="prose prose-sm max-w-none dark:prose-invert">
                   <div className="whitespace-pre-wrap text-gray-700 dark:text-gray-300 leading-relaxed">
@@ -518,7 +593,9 @@ export function EquestrianAnalysis({
                 <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center shadow-sm">
                   <ImageIcon className="h-4 w-4 text-white" />
                 </div>
-                <span className="text-lg font-semibold text-gray-800 dark:text-gray-200">Analyzed Image</span>
+                <span className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+                  Analyzed Image
+                </span>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -530,18 +607,22 @@ export function EquestrianAnalysis({
                     width={800}
                     height={600}
                     className="w-full h-auto rounded-lg object-contain"
-                    style={{ maxHeight: '500px' }}
+                    style={{ maxHeight: "500px" }}
                   />
                   <div className="absolute top-4 right-4">
                     <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm px-3 py-1 rounded-full shadow-md">
-                      <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Original</span>
+                      <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                        Original
+                      </span>
                     </div>
                   </div>
                 </div>
                 <div className="mt-4 text-center">
                   <div className="inline-flex items-center px-4 py-2 rounded-full bg-white dark:bg-gray-800 shadow-md border border-gray-200 dark:border-gray-700">
                     <ImageIcon className="h-4 w-4 mr-2 text-purple-500" />
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{uploadedImages[0].file.name}</span>
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {uploadedImages[0].file.name}
+                    </span>
                     <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
                       ({(uploadedImages[0].file.size / 1024).toFixed(1)} KB)
                     </span>
@@ -560,8 +641,12 @@ export function EquestrianAnalysis({
                 <Star className="h-5 w-5 text-white" />
               </div>
               <div>
-                <span className="text-xl font-bold text-gray-800 dark:text-gray-200">Performance Scores</span>
-                <p className="text-sm text-emerald-600 dark:text-emerald-400 mt-1">Overall assessment ratings</p>
+                <span className="text-xl font-bold text-gray-800 dark:text-gray-200">
+                  Performance Scores
+                </span>
+                <p className="text-sm text-emerald-600 dark:text-emerald-400 mt-1">
+                  Overall assessment ratings
+                </p>
               </div>
             </CardTitle>
           </CardHeader>

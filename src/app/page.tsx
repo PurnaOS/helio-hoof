@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
+import { ArrowLeft, Calendar, ImageIcon } from "lucide-react";
+import Link from "next/link";
+import { useState } from "react";
 import { AnalysisReport } from "@/components/analysis-report";
-import { ImageUpload, type UploadedImage } from "@/components/image-upload";
 import { UserNav } from "@/components/auth/user-nav";
+import { ImageUpload, type UploadedImage } from "@/components/image-upload";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ImageIcon, Calendar } from "lucide-react";
 
 export default function Home() {
   const { isSignedIn } = useUser();
@@ -17,7 +17,12 @@ export default function Home() {
   const [analysisDescription, setAnalysisDescription] = useState<string>("");
   const [error, setError] = useState<string>("");
 
-  const handleAnalysis = (result: string, images?: UploadedImage[], name?: string, description?: string) => {
+  const handleAnalysis = (
+    result: string,
+    images?: UploadedImage[],
+    name?: string,
+    description?: string,
+  ) => {
     setAnalysis(result);
     setUploadedImages(images || []);
     setAnalysisName(name || "");
@@ -37,7 +42,6 @@ export default function Home() {
     setAnalysisDescription("");
     setError("");
   };
-
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -70,6 +74,7 @@ export default function Home() {
           {/* Back navigation for analysis results */}
           <div className="container mx-auto px-4 py-4">
             <button
+              type="button"
               onClick={handleReset}
               className="inline-flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
             >
@@ -85,7 +90,8 @@ export default function Home() {
                 <div className="flex items-start justify-between mb-4">
                   <div>
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                      {analysisName || `${uploadedImages.length > 1 ? 'Multi' : 'Single'} Image Analysis`}
+                      {analysisName ||
+                        `${uploadedImages.length > 1 ? "Multi" : "Single"} Image Analysis`}
                     </h1>
                     {analysisDescription && (
                       <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
@@ -94,19 +100,24 @@ export default function Home() {
                     )}
                   </div>
                   <div className="flex items-center space-x-2">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      uploadedImages.length === 1
-                        ? 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100'
-                        : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100'
-                    }`}>
-                      {uploadedImages.length === 1 ? 'Single' : 'Multi'} Image
+                    <span
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        uploadedImages.length === 1
+                          ? "bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100"
+                          : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100"
+                      }`}
+                    >
+                      {uploadedImages.length === 1 ? "Single" : "Multi"} Image
                     </span>
                   </div>
                 </div>
                 <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
                   <div className="flex items-center space-x-1">
                     <ImageIcon className="h-4 w-4" />
-                    <span>{uploadedImages.length} image{uploadedImages.length !== 1 ? "s" : ""}</span>
+                    <span>
+                      {uploadedImages.length} image
+                      {uploadedImages.length !== 1 ? "s" : ""}
+                    </span>
                   </div>
                   <div className="flex items-center space-x-1">
                     <Calendar className="h-4 w-4" />
@@ -133,10 +144,10 @@ export default function Home() {
               Show Jumping Analyzer
             </h2>
             <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-              Upload single or multiple show jumping images for expert equestrian
-              analysis. Get detailed feedback on rider technique, horse
-              performance, and partnership dynamics with comparative analysis
-              across multiple images.
+              Upload single or multiple show jumping images for expert
+              equestrian analysis. Get detailed feedback on rider technique,
+              horse performance, and partnership dynamics with comparative
+              analysis across multiple images.
             </p>
           </div>
 

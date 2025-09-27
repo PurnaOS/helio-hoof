@@ -98,7 +98,6 @@ Be specific, constructive, and use proper equestrian terminology when analyzing 
   }
 
   try {
-
     const message = await anthropic.messages.create({
       model: "claude-sonnet-4-20250514",
       max_tokens: 1000,
@@ -130,7 +129,10 @@ Be specific, constructive, and use proper equestrian terminology when analyzing 
     const analysis =
       message.content[0].type === "text" ? message.content[0].text : "";
     console.log("Anthropic analysis from actual server");
-    console.log("Analysis preview:", analysis.substring(0, 200) + (analysis.length > 200 ? "..." : ""));
+    console.log(
+      "Analysis preview:",
+      analysis.substring(0, 200) + (analysis.length > 200 ? "..." : ""),
+    );
 
     return {
       analysis,

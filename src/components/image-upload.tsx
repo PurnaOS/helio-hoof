@@ -1,20 +1,25 @@
 "use client";
 
+import { useUser } from "@clerk/nextjs";
 import { Loader2, Upload, X } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
-import { useUser } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { cn, convertToBase64, validateImageFile } from "@/lib/utils";
-import Link from "next/link";
 
 interface ImageUploadProps {
-  onAnalysis: (analysis: string, images?: UploadedImage[], name?: string, description?: string) => void;
+  onAnalysis: (
+    analysis: string,
+    images?: UploadedImage[],
+    name?: string,
+    description?: string,
+  ) => void;
   onError: (error: string) => void;
 }
 
@@ -57,7 +62,7 @@ export function ImageUpload({ onAnalysis, onError }: ImageUploadProps) {
             filename: file.name,
           });
         } catch (error) {
-          console.error('Error converting image to base64:', error);
+          console.error("Error converting image to base64:", error);
           newImages.push({
             file,
             previewUrl: url,
@@ -111,7 +116,8 @@ export function ImageUpload({ onAnalysis, onError }: ImageUploadProps) {
                   Sign in to start analyzing
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400">
-                  Create an account or sign in to upload and analyze your show jumping images
+                  Create an account or sign in to upload and analyze your show
+                  jumping images
                 </p>
               </div>
               <div className="flex gap-4 justify-center">
@@ -150,7 +156,7 @@ export function ImageUpload({ onAnalysis, onError }: ImageUploadProps) {
     if (uploadedImages.length === 0) return;
 
     // Debug logging to check what values we have before sending
-    console.log('🔍 Frontend analyzeImages called with:', {
+    console.log("🔍 Frontend analyzeImages called with:", {
       analysisName,
       analysisDescription,
       nameLength: analysisName.length,
@@ -186,7 +192,12 @@ export function ImageUpload({ onAnalysis, onError }: ImageUploadProps) {
           throw new Error(data.error || "Failed to analyze image");
         }
 
-        onAnalysis(data.analysis, uploadedImages, analysisName, analysisDescription);
+        onAnalysis(
+          data.analysis,
+          uploadedImages,
+          analysisName,
+          analysisDescription,
+        );
       } else {
         // Multi-image analysis
         const imageData = await Promise.all(
@@ -216,7 +227,12 @@ export function ImageUpload({ onAnalysis, onError }: ImageUploadProps) {
           throw new Error(data.error || "Failed to analyze images");
         }
 
-        onAnalysis(data.analysis, uploadedImages, analysisName, analysisDescription);
+        onAnalysis(
+          data.analysis,
+          uploadedImages,
+          analysisName,
+          analysisDescription,
+        );
       }
     } catch (error) {
       onError(
@@ -228,7 +244,10 @@ export function ImageUpload({ onAnalysis, onError }: ImageUploadProps) {
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto space-y-4" data-testid="image-upload">
+    <div
+      className="w-full max-w-4xl mx-auto space-y-4"
+      data-testid="image-upload"
+    >
       {/* Upload Area */}
       <Card>
         <CardContent className="p-6">
@@ -323,7 +342,9 @@ export function ImageUpload({ onAnalysis, onError }: ImageUploadProps) {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="analysis-description">Description (Optional)</Label>
+                  <Label htmlFor="analysis-description">
+                    Description (Optional)
+                  </Label>
                   <Textarea
                     id="analysis-description"
                     placeholder="Describe the purpose of this analysis (e.g., 'Working on jump approach technique', 'Analyzing rider position during competition')"
@@ -337,7 +358,11 @@ export function ImageUpload({ onAnalysis, onError }: ImageUploadProps) {
 
               <Button
                 onClick={analyzeImages}
-                disabled={isAnalyzing || uploadedImages.length === 0 || !analysisName.trim()}
+                disabled={
+                  isAnalyzing ||
+                  uploadedImages.length === 0 ||
+                  !analysisName.trim()
+                }
                 className="w-full"
                 size="lg"
               >

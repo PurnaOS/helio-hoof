@@ -1,14 +1,22 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useUser } from "@clerk/nextjs";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Loader2, Calendar, Image as ImageIcon, Trash2, Eye, ChevronRight, Star } from "lucide-react";
-import Link from "next/link";
+import {
+  Calendar,
+  ChevronRight,
+  Eye,
+  Image as ImageIcon,
+  Loader2,
+  Star,
+  Trash2,
+} from "lucide-react";
 import Image from "next/image";
-import { AnalysisHistory } from "@/lib/db/schema";
+import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import type { AnalysisHistory } from "@/lib/db/schema";
 
 export default function HistoryPage() {
   const { isSignedIn, isLoaded } = useUser();
@@ -16,13 +24,7 @@ export default function HistoryPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>("");
 
-  useEffect(() => {
-    if (isSignedIn) {
-      fetchHistory();
-    }
-  }, [isSignedIn]);
-
-  const fetchHistory = async () => {
+  const fetchHistory = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch("/api/analysis-history");
@@ -38,7 +40,13 @@ export default function HistoryPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (isSignedIn) {
+      fetchHistory();
+    }
+  }, [isSignedIn, fetchHistory]);
 
   const deleteAnalysis = async (id: string) => {
     try {
@@ -51,9 +59,11 @@ export default function HistoryPage() {
       }
 
       // Remove from local state
-      setHistory(prev => prev.filter(item => item.id !== id));
+      setHistory((prev) => prev.filter((item) => item.id !== id));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete analysis");
+      setError(
+        err instanceof Error ? err.message : "Failed to delete analysis",
+      );
     }
   };
 
@@ -71,55 +81,84 @@ export default function HistoryPage() {
   const extractScores = (analysisResult: string) => {
     try {
       // First try to parse the entire string as JSON
-      let parsed;
+      let parsed: unknown;
       try {
         parsed = JSON.parse(analysisResult);
       } catch {
         // If that fails, try to extract JSON from the string
         const jsonMatch = analysisResult.match(/\{[\s\S]*\}/);
         if (!jsonMatch) {
-          return { riderScore: 0, horseScore: 0, type: 'unknown' };
+          return { riderScore: 0, horseScore: 0, type: "unknown" };
         }
 
         // Clean up the JSON string to handle common issues
         let jsonString = jsonMatch[0];
 
         // Remove any trailing commas that might cause JSON parsing errors
-        jsonString = jsonString.replace(/,(\s*[}\]])/g, '$1');
+        jsonString = jsonString.replace(/,(\s*[}\]])/g, "$1");
 
         // Remove any control characters that might cause issues
-        jsonString = jsonString.replace(/[\x00-\x1F\x7F]/g, '');
+        // biome-ignore lint/suspicious/noControlCharactersInRegex: Intentionally removing control characters from JSON
+        jsonString = jsonString.replace(/[\u0000-\u001F\u007F]/g, "");
 
         // Try to parse the cleaned JSON
         parsed = JSON.parse(jsonString);
       }
 
       // For single image analysis
-      if (parsed.rider_analysis && parsed.horse_analysis) {
-        return {
-          riderScore: parsed.rider_analysis.overall_score || 0,
-          horseScore: parsed.horse_analysis.overall_score || 0,
-          type: 'single'
-        };
-      }
+      if (parsed && typeof parsed === "object" && parsed !== null) {
+        const parsedObj = parsed as Record<string, unknown>;
+        if (parsedObj.rider_analysis && parsedObj.horse_analysis) {
+          const riderAnalysis = parsedObj.rider_analysis as Record<
+            string,
+            unknown
+          >;
+          const horseAnalysis = parsedObj.horse_analysis as Record<
+            string,
+            unknown
+          >;
+          return {
+            riderScore: (riderAnalysis.overall_score as number) || 0,
+            horseScore: (horseAnalysis.overall_score as number) || 0,
+            type: "single",
+          };
+        }
 
-      // For multi-image analysis
-      if (parsed.individual_analyses && Array.isArray(parsed.individual_analyses)) {
-        const avgRider = parsed.individual_analyses.reduce((sum: number, analysis: any) =>
-          sum + (analysis.rider_score || 0), 0) / parsed.individual_analyses.length;
-        const avgHorse = parsed.individual_analyses.reduce((sum: number, analysis: any) =>
-          sum + (analysis.horse_score || 0), 0) / parsed.individual_analyses.length;
+        // For multi-image analysis
+        if (
+          parsedObj.individual_analyses &&
+          Array.isArray(parsedObj.individual_analyses)
+        ) {
+          const individualAnalyses = parsedObj.individual_analyses as Array<
+            Record<string, unknown>
+          >;
+          const avgRider =
+            individualAnalyses.reduce(
+              (sum: number, analysis: Record<string, unknown>) =>
+                sum + ((analysis.rider_score as number) || 0),
+              0,
+            ) / individualAnalyses.length;
+          const avgHorse =
+            individualAnalyses.reduce(
+              (sum: number, analysis: Record<string, unknown>) =>
+                sum + ((analysis.horse_score as number) || 0),
+              0,
+            ) / individualAnalyses.length;
 
-        return {
-          riderScore: Math.round(avgRider * 10) / 10,
-          horseScore: Math.round(avgHorse * 10) / 10,
-          type: 'multi',
-          imageCount: parsed.individual_analyses.length
-        };
+          return {
+            riderScore: Math.round(avgRider * 10) / 10,
+            horseScore: Math.round(avgHorse * 10) / 10,
+            type: "multi",
+            imageCount: individualAnalyses.length,
+          };
+        }
       }
     } catch (error) {
-      console.error('Error parsing analysis scores:', error);
-      console.error('Analysis data that failed to parse:', analysisResult.substring(0, 200) + '...');
+      console.error("Error parsing analysis scores:", error);
+      console.error(
+        "Analysis data that failed to parse:",
+        `${analysisResult.substring(0, 200)}...`,
+      );
     }
 
     return null;
@@ -132,9 +171,9 @@ export default function HistoryPage() {
     return "text-red-600 dark:text-red-400";
   };
 
-  const truncateText = (text: string, maxLength: number = 150) => {
+  const _truncateText = (text: string, maxLength: number = 150) => {
     if (text.length <= maxLength) return text;
-    return text.substring(0, maxLength).trim() + "...";
+    return `${text.substring(0, maxLength).trim()}...`;
   };
 
   if (!isLoaded) {
@@ -177,12 +216,12 @@ export default function HistoryPage() {
                 </h1>
               </Link>
               <ChevronRight className="h-4 w-4 text-gray-400" />
-              <span className="text-gray-600 dark:text-gray-400">Analysis History</span>
+              <span className="text-gray-600 dark:text-gray-400">
+                Analysis History
+              </span>
             </div>
             <Link href="/">
-              <Button variant="outline">
-                Back to Analyzer
-              </Button>
+              <Button variant="outline">Back to Analyzer</Button>
             </Link>
           </div>
         </div>
@@ -198,18 +237,24 @@ export default function HistoryPage() {
               <p className="text-gray-600 dark:text-gray-400">
                 {history.length === 0
                   ? "View and manage your past equestrian analyses"
-                  : `${history.length} analysis${history.length !== 1 ? 'es' : ''} found`}
+                  : `${history.length} analysis${history.length !== 1 ? "es" : ""} found`}
               </p>
             </div>
             {history.length > 0 && (
               <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
                 <div className="flex items-center space-x-1">
                   <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  <span>Single: {history.filter(h => h.analysisType === 'single').length}</span>
+                  <span>
+                    Single:{" "}
+                    {history.filter((h) => h.analysisType === "single").length}
+                  </span>
                 </div>
                 <div className="flex items-center space-x-1">
                   <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                  <span>Multi: {history.filter(h => h.analysisType === 'multi').length}</span>
+                  <span>
+                    Multi:{" "}
+                    {history.filter((h) => h.analysisType === "multi").length}
+                  </span>
                 </div>
               </div>
             )}
@@ -251,12 +296,29 @@ export default function HistoryPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {history.map((item) => (
-              <Card key={item.id} className="group hover:shadow-lg transition-all duration-200 hover:scale-[1.02] cursor-pointer">
-                <div onClick={() => window.location.href = `/history/${item.id}`}>
+              <Card
+                key={item.id}
+                className="group hover:shadow-lg transition-all duration-200 hover:scale-[1.02] cursor-pointer"
+              >
+                <button
+                  type="button"
+                  className="w-full text-left bg-transparent border-none p-0 cursor-pointer"
+                  onClick={() => {
+                    window.location.href = `/history/${item.id}`;
+                  }}
+                >
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between mb-2">
-                      <Badge variant={item.analysisType === "single" ? "default" : "secondary"} className="text-xs">
-                        {item.analysisType === "single" ? "Single" : "Multi"} Image
+                      <Badge
+                        variant={
+                          item.analysisType === "single"
+                            ? "default"
+                            : "secondary"
+                        }
+                        className="text-xs"
+                      >
+                        {item.analysisType === "single" ? "Single" : "Multi"}{" "}
+                        Image
                       </Badge>
                       <Button
                         size="sm"
@@ -274,7 +336,8 @@ export default function HistoryPage() {
                     {/* Analysis Name and Description */}
                     <div className="mb-3">
                       <h3 className="font-semibold text-gray-900 dark:text-white text-sm mb-1">
-                        {item.name || `${item.analysisType === 'single' ? 'Single' : 'Multi'} Image Analysis`}
+                        {item.name ||
+                          `${item.analysisType === "single" ? "Single" : "Multi"} Image Analysis`}
                       </h3>
                       {item.description && (
                         <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
@@ -285,10 +348,17 @@ export default function HistoryPage() {
 
                     <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400 mb-3">
                       <ImageIcon className="h-4 w-4" />
-                      <span>{item.imageCount} image{item.imageCount !== 1 ? "s" : ""}</span>
+                      <span>
+                        {item.imageCount} image
+                        {item.imageCount !== 1 ? "s" : ""}
+                      </span>
                       <span>•</span>
                       <Calendar className="h-4 w-4" />
-                      <span>{item.createdAt ? formatDate(item.createdAt).split(',')[0] : 'Unknown'}</span>
+                      <span>
+                        {item.createdAt
+                          ? formatDate(item.createdAt).split(",")[0]
+                          : "Unknown"}
+                      </span>
                     </div>
 
                     {/* Image Thumbnails */}
@@ -296,7 +366,10 @@ export default function HistoryPage() {
                       <div className="mb-4">
                         <div className="flex gap-2 overflow-hidden">
                           {item.images.slice(0, 4).map((img, index) => (
-                            <div key={index} className="relative">
+                            <div
+                              key={img.id || `thumb-${index}`}
+                              className="relative"
+                            >
                               {img.base64Data ? (
                                 <div className="relative w-16 h-16 rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700 shadow-sm">
                                   <Image
@@ -317,7 +390,9 @@ export default function HistoryPage() {
                           ))}
                           {item.images.length > 4 && (
                             <div className="w-16 h-16 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900 dark:to-indigo-900 rounded-lg flex items-center justify-center border-2 border-blue-200 dark:border-blue-700">
-                              <span className="text-xs font-bold text-blue-600 dark:text-blue-400">+{item.images.length - 4}</span>
+                              <span className="text-xs font-bold text-blue-600 dark:text-blue-400">
+                                +{item.images.length - 4}
+                              </span>
                             </div>
                           )}
                         </div>
@@ -334,23 +409,33 @@ export default function HistoryPage() {
                           <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-lg p-4">
                             <div className="flex items-center gap-2 mb-3">
                               <Star className="h-4 w-4 text-yellow-500" />
-                              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Overall Scores</span>
+                              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Overall Scores
+                              </span>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                               <div className="text-center">
-                                <div className={`text-2xl font-bold ${getScoreColor(scores.riderScore)}`}>
+                                <div
+                                  className={`text-2xl font-bold ${getScoreColor(scores.riderScore)}`}
+                                >
                                   {scores.riderScore}/10
                                 </div>
-                                <div className="text-xs text-gray-500 dark:text-gray-400">Rider</div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400">
+                                  Rider
+                                </div>
                               </div>
                               <div className="text-center">
-                                <div className={`text-2xl font-bold ${getScoreColor(scores.horseScore)}`}>
+                                <div
+                                  className={`text-2xl font-bold ${getScoreColor(scores.horseScore)}`}
+                                >
                                   {scores.horseScore}/10
                                 </div>
-                                <div className="text-xs text-gray-500 dark:text-gray-400">Horse</div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400">
+                                  Horse
+                                </div>
                               </div>
                             </div>
-                            {scores.type === 'multi' && (
+                            {scores.type === "multi" && (
                               <div className="mt-2 text-center">
                                 <div className="text-xs text-blue-600 dark:text-blue-400 font-medium">
                                   Average across {scores.imageCount} images
@@ -383,7 +468,7 @@ export default function HistoryPage() {
                       </div>
                     </div>
                   </CardContent>
-                </div>
+                </button>
               </Card>
             ))}
           </div>

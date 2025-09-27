@@ -473,8 +473,8 @@ export async function exportToPDF({
       throw new Error("Failed to convert canvas to image data");
     }
 
-    let heightLeft = imgHeight;
-    let position = 55; // Start below improved header with more spacing
+    const _heightLeft = imgHeight;
+    const position = 55; // Start below improved header with more spacing
 
     console.log("Adding content to PDF with proper page breaks...");
 
@@ -484,7 +484,9 @@ export async function exportToPDF({
 
     // Convert canvas to multiple page images if needed
     if (imgHeight > maxContentHeight) {
-      console.log(`Content height ${imgHeight}mm exceeds page limit ${maxContentHeight}mm - creating multiple pages`);
+      console.log(
+        `Content height ${imgHeight}mm exceeds page limit ${maxContentHeight}mm - creating multiple pages`,
+      );
 
       // Create pages by slicing the canvas
       let remainingHeight = imgHeight;
@@ -512,15 +514,17 @@ export async function exportToPDF({
         }
 
         // Calculate content height for this page (first page has larger header)
-        const thisPageMaxHeight = pageNumber === 0 ? maxContentHeight : (pageHeight - 45 - 25); // 45mm for continuation header, 25mm for footer
+        const thisPageMaxHeight =
+          pageNumber === 0 ? maxContentHeight : pageHeight - 45 - 25; // 45mm for continuation header, 25mm for footer
         const pageContentHeight = Math.min(remainingHeight, thisPageMaxHeight);
 
         // Calculate the portion of the canvas to use for this page
-        const canvasSliceHeight = (pageContentHeight / imgHeight) * canvas.height;
+        const canvasSliceHeight =
+          (pageContentHeight / imgHeight) * canvas.height;
 
         // Create a new canvas with just the slice we need for this page
-        const tempCanvas = document.createElement('canvas');
-        const tempCtx = tempCanvas.getContext('2d');
+        const tempCanvas = document.createElement("canvas");
+        const tempCtx = tempCanvas.getContext("2d");
 
         if (tempCtx) {
           tempCanvas.width = canvas.width;
@@ -529,10 +533,14 @@ export async function exportToPDF({
           // Draw the slice from the original canvas
           tempCtx.drawImage(
             canvas,
-            0, canvasYOffset,           // Source x, y
-            canvas.width, canvasSliceHeight,  // Source width, height
-            0, 0,                       // Destination x, y
-            canvas.width, canvasSliceHeight   // Destination width, height
+            0,
+            canvasYOffset, // Source x, y
+            canvas.width,
+            canvasSliceHeight, // Source width, height
+            0,
+            0, // Destination x, y
+            canvas.width,
+            canvasSliceHeight, // Destination width, height
           );
 
           // Convert this slice to image data
@@ -540,7 +548,14 @@ export async function exportToPDF({
 
           // Add the slice to the PDF page
           const yPos = pageNumber === 0 ? position : 45; // First page uses original position, continuation pages start after their header
-          pdf.addImage(sliceImageData, "PNG", xMargin, yPos, imgWidth, pageContentHeight);
+          pdf.addImage(
+            sliceImageData,
+            "PNG",
+            xMargin,
+            yPos,
+            imgWidth,
+            pageContentHeight,
+          );
 
           // Clean up
           tempCanvas.remove();

@@ -1,15 +1,40 @@
-import React from 'react';
+import type React from "react";
+
+interface AnalysisData {
+  rider_analysis?: {
+    overall_score?: number;
+    positives?: string[];
+    areas_for_improvement?: string[];
+    priority_focus?: string;
+  };
+  horse_analysis?: {
+    overall_score?: number;
+    positives?: string[];
+    technical_notes?: string[];
+    athletic_assessment?: string;
+  };
+  partnership_notes?: string;
+  safety_observations?: string;
+  individual_analyses?: Array<{
+    rider_score?: number;
+    horse_score?: number;
+    [key: string]: unknown;
+  }>;
+  [key: string]: unknown;
+}
+
+interface ImageData {
+  base64: string;
+  filename?: string;
+  mimeType: string;
+}
 
 export interface EnhancedPDFExportOptions {
   filename?: string;
   title: string;
   subtitle?: string;
-  analysis: any; // The parsed analysis data
-  images: Array<{
-    base64: string;
-    filename?: string;
-    mimeType: string;
-  }>;
+  analysis: AnalysisData;
+  images: ImageData[];
   isMultiImage?: boolean;
 }
 
@@ -18,14 +43,18 @@ export function generatePDFContent(options: EnhancedPDFExportOptions) {
   const timestamp = new Date().toLocaleString();
 
   // Generate thumbnails HTML
-  const thumbnailsHTML = images.length > 0 ? `
+  const thumbnailsHTML =
+    images.length > 0
+      ? `
     <div style="border-top: 2px solid #f3f4f6; padding-top: 20px;">
       <h3 style="font-weight: 600; margin-bottom: 16px; text-align: center;">Analyzed Images</h3>
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; justify-items: center;">
-        ${images.map((image: any, index: number) => `
+        ${images
+          .map(
+            (image: ImageData, index: number) => `
           <div style="text-align: center;">
             <img
-              src="${image.base64.startsWith('data:') ? image.base64 : `data:${image.mimeType};base64,${image.base64}`}"
+              src="${image.base64.startsWith("data:") ? image.base64 : `data:${image.mimeType};base64,${image.base64}`}"
               alt="${image.filename || `Thumbnail ${index + 1}`}"
               style="width: 120px; height: 90px; object-fit: cover; border: 2px solid #e5e5e5; border-radius: 6px; display: block; margin: 0 auto 8px auto;"
               onload="console.log('Thumbnail loaded:', '${image.filename || `Image ${index + 1}`}');"
@@ -38,16 +67,21 @@ export function generatePDFContent(options: EnhancedPDFExportOptions) {
               ${image.filename || `Image ${index + 1}`}
             </p>
           </div>
-        `).join('')}
+        `,
+          )
+          .join("")}
       </div>
     </div>
-  ` : '';
+  `
+      : "";
 
   // Generate individual image pages with analysis
-  const multiImagePagesHTML = isMultiImage && analysis.individual_analyses ?
-    analysis.individual_analyses.map((item: any, index: number) => {
-      const correspondingImage = images[index];
-      return `
+  const multiImagePagesHTML =
+    isMultiImage && analysis.individual_analyses
+      ? analysis.individual_analyses
+          .map((item: Record<string, unknown>, index: number) => {
+            const correspondingImage = images[index];
+            return `
         <div class="page-break"></div>
         <!-- Image Section -->
         <div class="pdf-card avoid-break" style="margin-bottom: 20px;">
@@ -56,9 +90,11 @@ export function generatePDFContent(options: EnhancedPDFExportOptions) {
           </div>
           <div class="card-content">
             <div style="text-align: center; padding: 20px;">
-              ${correspondingImage ? `
+              ${
+                correspondingImage
+                  ? `
                 <img
-                  src="${correspondingImage.base64.startsWith('data:') ? correspondingImage.base64 : `data:${correspondingImage.mimeType};base64,${correspondingImage.base64}`}"
+                  src="${correspondingImage.base64.startsWith("data:") ? correspondingImage.base64 : `data:${correspondingImage.mimeType};base64,${correspondingImage.base64}`}"
                   alt="${correspondingImage.filename || `Analysis image ${index + 1}`}"
                   class="analysis-image"
                   style="max-width: 100%; height: auto; display: block; margin: 0 auto; border: 2px solid #e5e5e5; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
@@ -70,11 +106,13 @@ export function generatePDFContent(options: EnhancedPDFExportOptions) {
                   Filename: ${correspondingImage.filename || `Image ${index + 1}`}<br>
                   Format: ${correspondingImage.mimeType}
                 </div>
-              ` : `
+              `
+                  : `
                 <div style="background: #f3f4f6; padding: 40px; border-radius: 8px; color: #6b7280;">
                   <strong>Image ${index + 1} not available</strong>
                 </div>
-              `}
+              `
+              }
             </div>
           </div>
         </div>
@@ -82,7 +120,7 @@ export function generatePDFContent(options: EnhancedPDFExportOptions) {
         <!-- Analysis Section -->
         <div class="pdf-card avoid-break">
           <div class="card-header">
-            <div class="card-title">📊 Image ${item.image_number || (index + 1)} Analysis</div>
+            <div class="card-title">📊 Image ${item.image_number || index + 1} Analysis</div>
           </div>
           <div class="card-content space-y-4">
             <div class="grid-2" style="margin-bottom: 20px;">
@@ -106,57 +144,64 @@ export function generatePDFContent(options: EnhancedPDFExportOptions) {
             <div class="avoid-break" style="margin-bottom: 16px;">
               <h4 class="positive-text" style="margin-bottom: 8px;">✓ Rider Strengths</h4>
               <ul class="space-y-2">
-                ${item.rider_strengths.map((strength: string) => `<li style="font-size: 0.875rem;">• ${strength}</li>`).join('')}
+                ${item.rider_strengths.map((strength: string) => `<li style="font-size: 0.875rem;">• ${strength}</li>`).join("")}
               </ul>
             </div>
 
             <div class="avoid-break" style="margin-bottom: 16px;">
               <h4 class="improvement-text" style="margin-bottom: 8px;">⚠ Areas for Improvement</h4>
               <ul class="space-y-2">
-                ${(item.rider_weaknesses || item.improvements || []).map((weakness: string) => `<li style="font-size: 0.875rem;">• ${weakness}</li>`).join('')}
+                ${(item.rider_weaknesses || item.improvements || []).map((weakness: string) => `<li style="font-size: 0.875rem;">• ${weakness}</li>`).join("")}
               </ul>
             </div>
 
             <div class="avoid-break">
               <h4 class="positive-text" style="margin-bottom: 8px;">🐎 Horse Strengths</h4>
               <ul class="space-y-2">
-                ${item.horse_strengths.map((strength: string) => `<li style="font-size: 0.875rem;">• ${strength}</li>`).join('')}
+                ${item.horse_strengths.map((strength: string) => `<li style="font-size: 0.875rem;">• ${strength}</li>`).join("")}
               </ul>
             </div>
           </div>
         </div>
       `;
-    }).join('') : '';
+          })
+          .join("")
+      : "";
 
   // Generate single image page with analysis
-  const singleImagePageHTML = !isMultiImage ? `
+  const singleImagePageHTML = !isMultiImage
+    ? `
     <div class="page-break"></div>
 
     <!-- Single Image Section -->
-    ${images.length > 0 ? `
+    ${
+      images.length > 0
+        ? `
       <div class="pdf-card avoid-break" style="margin-bottom: 20px;">
         <div class="card-header">
-          <div class="card-title">📸 ${images[0]?.filename || 'Analyzed Image'}</div>
+          <div class="card-title">📸 ${images[0]?.filename || "Analyzed Image"}</div>
         </div>
         <div class="card-content">
           <div style="text-align: center; padding: 20px;">
             <img
-              src="${images[0].base64.startsWith('data:') ? images[0].base64 : `data:${images[0].mimeType};base64,${images[0].base64}`}"
-              alt="${images[0].filename || 'Analysis image'}"
+              src="${images[0].base64.startsWith("data:") ? images[0].base64 : `data:${images[0].mimeType};base64,${images[0].base64}`}"
+              alt="${images[0].filename || "Analysis image"}"
               class="analysis-image"
               style="max-width: 100%; height: auto; display: block; margin: 0 auto; border: 2px solid #e5e5e5; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
-              onload="console.log('Single image loaded successfully:', '${images[0].filename || 'Single image'}');"
+              onload="console.log('Single image loaded successfully:', '${images[0].filename || "Single image"}');"
               onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
             />
             <div style="display: none; background: #f3f4f6; padding: 20px; border-radius: 8px; color: #6b7280;">
               <strong>Image failed to load</strong><br>
-              Filename: ${images[0].filename || 'Single image'}<br>
+              Filename: ${images[0].filename || "Single image"}<br>
               Format: ${images[0].mimeType}
             </div>
           </div>
         </div>
       </div>
-    ` : ''}
+    `
+        : ""
+    }
 
     <!-- Single Image Analysis -->
     <div class="pdf-card avoid-break">
@@ -183,14 +228,14 @@ export function generatePDFContent(options: EnhancedPDFExportOptions) {
           <div style="margin-bottom: 16px;">
             <h4 class="positive-text" style="font-size: 1.125rem; margin-bottom: 8px;">✓ Positives</h4>
             <ul class="space-y-2">
-              ${analysis.rider_analysis.positives.map((positive: string) => `<li style="font-size: 0.875rem;">• ${positive}</li>`).join('')}
+              ${analysis.rider_analysis.positives.map((positive: string) => `<li style="font-size: 0.875rem;">• ${positive}</li>`).join("")}
             </ul>
           </div>
 
           <div style="margin-bottom: 16px;">
             <h4 class="improvement-text" style="font-size: 1.125rem; margin-bottom: 8px;">⚠ Areas for Improvement</h4>
             <ul class="space-y-2">
-              ${analysis.rider_analysis.areas_for_improvement.map((area: string) => `<li style="font-size: 0.875rem;">• ${area}</li>`).join('')}
+              ${analysis.rider_analysis.areas_for_improvement.map((area: string) => `<li style="font-size: 0.875rem;">• ${area}</li>`).join("")}
             </ul>
           </div>
 
@@ -211,14 +256,14 @@ export function generatePDFContent(options: EnhancedPDFExportOptions) {
           <div style="margin-bottom: 16px;">
             <h4 class="positive-text" style="font-size: 1.125rem; margin-bottom: 8px;">✓ Positives</h4>
             <ul class="space-y-2">
-              ${analysis.horse_analysis.positives.map((positive: string) => `<li style="font-size: 0.875rem;">• ${positive}</li>`).join('')}
+              ${analysis.horse_analysis.positives.map((positive: string) => `<li style="font-size: 0.875rem;">• ${positive}</li>`).join("")}
             </ul>
           </div>
 
           <div style="margin-bottom: 16px;">
             <h4 style="font-weight: 600; font-size: 1.125rem; margin-bottom: 8px;">🔧 Technical Notes</h4>
             <ul class="space-y-2">
-              ${analysis.horse_analysis.technical_notes.map((note: string) => `<li style="font-size: 0.875rem;">• ${note}</li>`).join('')}
+              ${analysis.horse_analysis.technical_notes.map((note: string) => `<li style="font-size: 0.875rem;">• ${note}</li>`).join("")}
             </ul>
           </div>
 
@@ -256,10 +301,13 @@ export function generatePDFContent(options: EnhancedPDFExportOptions) {
         </div>
       </div>
     </div>
-  ` : '';
+  `
+    : "";
 
   // Generate comparative analysis for multi-image
-  const comparativeAnalysisHTML = isMultiImage && analysis.comparative_analysis ? `
+  const comparativeAnalysisHTML =
+    isMultiImage && analysis.comparative_analysis
+      ? `
     <div class="page-break"></div>
     <div class="pdf-card avoid-break">
       <div class="card-header">
@@ -297,12 +345,13 @@ export function generatePDFContent(options: EnhancedPDFExportOptions) {
         <div class="avoid-break">
           <h4 class="priority-text" style="margin-bottom: 8px;">Priority Focus Areas</h4>
           <ul class="space-y-2">
-            ${analysis.comparative_analysis.priority_focus_areas.map((area: string) => `<li style="font-size: 0.875rem;">• ${area}</li>`).join('')}
+            ${analysis.comparative_analysis.priority_focus_areas.map((area: string) => `<li style="font-size: 0.875rem;">• ${area}</li>`).join("")}
           </ul>
         </div>
       </div>
     </div>
-  ` : '';
+  `
+      : "";
 
   return `
 <!DOCTYPE html>
@@ -475,7 +524,7 @@ export function generatePDFContent(options: EnhancedPDFExportOptions) {
     <!-- Header -->
     <div class="pdf-header">
         <h1 style="font-size: 2rem; font-weight: bold; margin-bottom: 8px;">${title}</h1>
-        ${subtitle ? `<h2 style="font-size: 1.125rem; color: #6b7280; margin-bottom: 8px;">${subtitle}</h2>` : ''}
+        ${subtitle ? `<h2 style="font-size: 1.125rem; color: #6b7280; margin-bottom: 8px;">${subtitle}</h2>` : ""}
         <p style="font-size: 0.875rem; color: #9ca3af;">Generated on: ${timestamp}</p>
     </div>
 
@@ -487,23 +536,27 @@ export function generatePDFContent(options: EnhancedPDFExportOptions) {
             </div>
             <div class="card-content">
                 <!-- Performance Scores -->
-                ${isMultiImage ? `
+                ${
+                  isMultiImage
+                    ? `
                 <div class="text-center" style="margin-bottom: 30px;">
                     <p style="font-weight: 600; margin-bottom: 12px; font-size: 1.25rem;">Multi-Image Analysis Summary</p>
                     <p style="color: #6b7280; font-size: 0.875rem;">Individual scores and detailed analysis on following pages</p>
                 </div>
-                ` : `
+                `
+                    : `
                 <div class="grid-2" style="margin-bottom: 30px;">
                     <div class="text-center">
                         <p style="font-weight: 600; margin-bottom: 12px; font-size: 1.125rem;">Rider Performance</p>
-                        <span class="score-badge">${analysis.rider_analysis?.overall_score || 'N/A'}/10</span>
+                        <span class="score-badge">${analysis.rider_analysis?.overall_score || "N/A"}/10</span>
                     </div>
                     <div class="text-center">
                         <p style="font-weight: 600; margin-bottom: 12px; font-size: 1.125rem;">Horse Performance</p>
-                        <span class="score-badge">${analysis.horse_analysis?.overall_score || 'N/A'}/10</span>
+                        <span class="score-badge">${analysis.horse_analysis?.overall_score || "N/A"}/10</span>
                     </div>
                 </div>
-                `}
+                `
+                }
 
                 <!-- Image Thumbnails -->
                 ${thumbnailsHTML}
@@ -523,33 +576,39 @@ export function generatePDFContent(options: EnhancedPDFExportOptions) {
 </html>`;
 }
 
-export async function exportToEnhancedPDF(options: EnhancedPDFExportOptions): Promise<void> {
-  const { filename = 'equestrian-analysis-report', images } = options;
+export async function exportToEnhancedPDF(
+  options: EnhancedPDFExportOptions,
+): Promise<void> {
+  const { filename = "equestrian-analysis-report", images } = options;
 
   // Debug image data
-  console.log('PDF Export Debug:', {
+  console.log("PDF Export Debug:", {
     imageCount: images.length,
-    imageDetails: images.map((img: any, i: number) => {
-      const finalSrc = img.base64?.startsWith('data:') ? img.base64 : `data:${img.mimeType};base64,${img.base64}`;
+    imageDetails: images.map((img: ImageData, i: number) => {
+      const finalSrc = img.base64?.startsWith("data:")
+        ? img.base64
+        : `data:${img.mimeType};base64,${img.base64}`;
       return {
         index: i,
         filename: img.filename,
         mimeType: img.mimeType,
         base64Length: img.base64?.length || 0,
-        hasDataPrefix: img.base64?.startsWith('data:') || false,
-        finalSrcPreview: finalSrc?.substring(0, 60) + '...',
-        finalSrcLength: finalSrc?.length || 0
+        hasDataPrefix: img.base64?.startsWith("data:") || false,
+        finalSrcPreview: `${finalSrc?.substring(0, 60)}...`,
+        finalSrcLength: finalSrc?.length || 0,
       };
-    })
+    }),
   });
 
   // Generate the HTML content
   const htmlContent = generatePDFContent(options);
 
   // Create a temporary window to print the content
-  const printWindow = window.open('', '_blank');
+  const printWindow = window.open("", "_blank");
   if (!printWindow) {
-    throw new Error('Unable to open print window. Please check your browser popup settings.');
+    throw new Error(
+      "Unable to open print window. Please check your browser popup settings.",
+    );
   }
 
   // Write the HTML content to the new window
@@ -559,7 +618,7 @@ export async function exportToEnhancedPDF(options: EnhancedPDFExportOptions): Pr
   // Wait for the content to load, then trigger print
   printWindow.onload = () => {
     // Set the document title for the PDF filename
-    printWindow.document.title = `${filename}-${new Date().toISOString().split('T')[0]}`;
+    printWindow.document.title = `${filename}-${new Date().toISOString().split("T")[0]}`;
 
     // Trigger the print dialog
     printWindow.print();
@@ -574,20 +633,22 @@ export async function exportToEnhancedPDF(options: EnhancedPDFExportOptions): Pr
 // Alternative function using react-to-print approach for React components
 export async function printReactComponent(
   componentRef: React.RefObject<HTMLDivElement>,
-  filename?: string
+  filename?: string,
 ): Promise<void> {
   if (!componentRef.current) {
-    throw new Error('Component reference is not available');
+    throw new Error("Component reference is not available");
   }
 
   const printContent = componentRef.current.innerHTML;
 
-  const printWindow = window.open('', '_blank');
+  const printWindow = window.open("", "_blank");
   if (!printWindow) {
-    throw new Error('Unable to open print window. Please check your browser popup settings.');
+    throw new Error(
+      "Unable to open print window. Please check your browser popup settings.",
+    );
   }
 
-  const finalFilename = `${filename || 'equestrian-analysis-report'}-${new Date().toISOString().split('T')[0]}`;
+  const finalFilename = `${filename || "equestrian-analysis-report"}-${new Date().toISOString().split("T")[0]}`;
 
   printWindow.document.write(`
     <!DOCTYPE html>

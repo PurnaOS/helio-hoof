@@ -1,8 +1,8 @@
-import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { analyzeMultipleImages } from "@/lib/anthropic";
-import { logDevConfig, validateDevSetup } from "@/lib/dev-config";
 import { db, schema } from "@/lib/db";
+import { logDevConfig, validateDevSetup } from "@/lib/dev-config";
 
 export async function POST(request: NextRequest) {
   // Log development configuration
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     const { images, name, description } = body;
 
     // Debug logging to check what data we're receiving from frontend
-    console.log('🔍 API analyze-images received:', {
+    console.log("🔍 API analyze-images received:", {
       imagesCount: images?.length || 0,
       name,
       description,
@@ -64,19 +64,31 @@ export async function POST(request: NextRequest) {
 
     // Save analysis to history
     try {
-      const imageMetadata = images.map((img: any, index: number) => ({
-        id: crypto.randomUUID(),
-        filename: img.filename || `image-${index + 1}`,
-        size: img.size || 0,
-        type: img.mimeType,
-        base64Data: img.base64, // Save the base64 data for history reconstruction
-      }));
+      const imageMetadata = images.map(
+        (
+          img: {
+            filename?: string;
+            size?: number;
+            mimeType: string;
+            base64: string;
+          },
+          index: number,
+        ) => ({
+          id: crypto.randomUUID(),
+          filename: img.filename || `image-${index + 1}`,
+          size: img.size || 0,
+          type: img.mimeType,
+          base64Data: img.base64, // Save the base64 data for history reconstruction
+        }),
+      );
 
       // Handle name and description more explicitly
-      const finalName = (name && name.trim()) ? name.trim() : `Multi Image Analysis - ${new Date().toLocaleDateString()}`;
-      const finalDescription = (description && description.trim()) ? description.trim() : null;
+      const finalName = name?.trim()
+        ? name.trim()
+        : `Multi Image Analysis - ${new Date().toLocaleDateString()}`;
+      const finalDescription = description?.trim() ? description.trim() : null;
 
-      console.log('🔍 Multi-image database insertion values:', {
+      console.log("🔍 Multi-image database insertion values:", {
         name: name,
         nameType: typeof name,
         finalName,

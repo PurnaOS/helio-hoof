@@ -83,56 +83,64 @@ function AnalysisSection({
 }) {
   // Different gradient colors for different sections
   const getGradientColors = (title: string) => {
-    if (title.includes('Comparative')) {
+    if (title.includes("Comparative")) {
       return {
-        bg: 'from-cyan-50 to-blue-50 dark:from-cyan-950 dark:to-blue-950',
-        border: 'border-cyan-200 dark:border-cyan-800',
-        iconBg: 'from-cyan-500 to-blue-500',
-        textColor: 'text-cyan-600 dark:text-cyan-400'
+        bg: "from-cyan-50 to-blue-50 dark:from-cyan-950 dark:to-blue-950",
+        border: "border-cyan-200 dark:border-cyan-800",
+        iconBg: "from-cyan-500 to-blue-500",
+        textColor: "text-cyan-600 dark:text-cyan-400",
       };
-    } else if (title.includes('Priority') || title.includes('Focus')) {
+    } else if (title.includes("Priority") || title.includes("Focus")) {
       return {
-        bg: 'from-orange-50 to-red-50 dark:from-orange-950 dark:to-red-950',
-        border: 'border-orange-200 dark:border-orange-800',
-        iconBg: 'from-orange-500 to-red-500',
-        textColor: 'text-orange-600 dark:text-orange-400'
+        bg: "from-orange-50 to-red-50 dark:from-orange-950 dark:to-red-950",
+        border: "border-orange-200 dark:border-orange-800",
+        iconBg: "from-orange-500 to-red-500",
+        textColor: "text-orange-600 dark:text-orange-400",
       };
-    } else if (title.includes('Partnership')) {
+    } else if (title.includes("Partnership")) {
       return {
-        bg: 'from-purple-50 to-violet-50 dark:from-purple-950 dark:to-violet-950',
-        border: 'border-purple-200 dark:border-purple-800',
-        iconBg: 'from-purple-500 to-violet-500',
-        textColor: 'text-purple-600 dark:text-purple-400'
+        bg: "from-purple-50 to-violet-50 dark:from-purple-950 dark:to-violet-950",
+        border: "border-purple-200 dark:border-purple-800",
+        iconBg: "from-purple-500 to-violet-500",
+        textColor: "text-purple-600 dark:text-purple-400",
       };
-    } else if (title.includes('Safety')) {
+    } else if (title.includes("Safety")) {
       return {
-        bg: 'from-red-50 to-rose-50 dark:from-red-950 dark:to-rose-950',
-        border: 'border-red-200 dark:border-red-800',
-        iconBg: 'from-red-500 to-rose-500',
-        textColor: 'text-red-600 dark:text-red-400'
+        bg: "from-red-50 to-rose-50 dark:from-red-950 dark:to-rose-950",
+        border: "border-red-200 dark:border-red-800",
+        iconBg: "from-red-500 to-rose-500",
+        textColor: "text-red-600 dark:text-red-400",
       };
     }
     // Default
     return {
-      bg: 'from-emerald-50 to-teal-50 dark:from-emerald-950 dark:to-teal-950',
-      border: 'border-emerald-200 dark:border-emerald-800',
-      iconBg: 'from-emerald-500 to-teal-500',
-      textColor: 'text-emerald-600 dark:text-emerald-400'
+      bg: "from-emerald-50 to-teal-50 dark:from-emerald-950 dark:to-teal-950",
+      border: "border-emerald-200 dark:border-emerald-800",
+      iconBg: "from-emerald-500 to-teal-500",
+      textColor: "text-emerald-600 dark:text-emerald-400",
     };
   };
 
   const colors = getGradientColors(title);
 
   return (
-    <Card className={`bg-gradient-to-br ${colors.bg} ${colors.border} shadow-lg`}>
+    <Card
+      className={`bg-gradient-to-br ${colors.bg} ${colors.border} shadow-lg`}
+    >
       <CardHeader className="pb-4">
         <CardTitle className="flex items-center gap-3 text-lg">
-          <div className={`w-9 h-9 bg-gradient-to-r ${colors.iconBg} rounded-lg flex items-center justify-center shadow-md`}>
+          <div
+            className={`w-9 h-9 bg-gradient-to-r ${colors.iconBg} rounded-lg flex items-center justify-center shadow-md`}
+          >
             <Icon className="h-4 w-4 text-white" />
           </div>
           <div>
-            <span className="font-bold text-gray-800 dark:text-gray-200">{title}</span>
-            <div className={`h-1 w-16 bg-gradient-to-r ${colors.iconBg} rounded-full mt-1`}></div>
+            <span className="font-bold text-gray-800 dark:text-gray-200">
+              {title}
+            </span>
+            <div
+              className={`h-1 w-16 bg-gradient-to-r ${colors.iconBg} rounded-full mt-1`}
+            ></div>
           </div>
         </CardTitle>
       </CardHeader>
@@ -164,10 +172,13 @@ export function MultiImageAnalysis({
   React.useEffect(() => {
     try {
       // Try multiple strategies to extract JSON from the analysis text
-      let parsed: any = null;
+      let parsed: unknown = null;
       let jsonStr = "";
 
-      console.log("🔍 Multi-image: Raw analysis received:", analysis.substring(0, 300) + (analysis.length > 300 ? "..." : ""));
+      console.log(
+        "🔍 Multi-image: Raw analysis received:",
+        analysis.substring(0, 300) + (analysis.length > 300 ? "..." : ""),
+      );
 
       // Strategy 1: Try parsing the entire response as JSON (for clean responses)
       try {
@@ -181,7 +192,9 @@ export function MultiImageAnalysis({
           parsed = JSON.parse(jsonStr);
         } else {
           // Strategy 3: Look for JSON between code blocks or markers
-          const codeBlockMatch = analysis.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/i);
+          const codeBlockMatch = analysis.match(
+            /```(?:json)?\s*(\{[\s\S]*?\})\s*```/i,
+          );
           if (codeBlockMatch) {
             jsonStr = codeBlockMatch[1];
             parsed = JSON.parse(jsonStr);
@@ -201,43 +214,56 @@ export function MultiImageAnalysis({
           const invalidCount = totalImages - validCount;
 
           if (validCount === 0) {
-            setParseError("None of the uploaded images contain show jumping content suitable for analysis. Please upload images showing horses and riders jumping over fences or obstacles.");
+            setParseError(
+              "None of the uploaded images contain show jumping content suitable for analysis. Please upload images showing horses and riders jumping over fences or obstacles.",
+            );
             return;
           } else {
-            setParseError(`${invalidCount} of ${totalImages} images do not show show jumping content. Analysis provided for ${validCount} valid image${validCount !== 1 ? 's' : ''}.`);
+            setParseError(
+              `${invalidCount} of ${totalImages} images do not show show jumping content. Analysis provided for ${validCount} valid image${validCount !== 1 ? "s" : ""}.`,
+            );
           }
         }
 
         // Validate that the parsed data has the expected structure for show jumping analysis
         if (
           (Array.isArray(parsed.individual_analyses) &&
-          parsed.individual_analyses.length > 0 &&
-          parsed.comparative_analysis &&
-          typeof parsed.comparative_analysis === "object") ||
-          (parsed.all_show_jumping === false && Array.isArray(parsed.individual_analyses))
+            parsed.individual_analyses.length > 0 &&
+            parsed.comparative_analysis &&
+            typeof parsed.comparative_analysis === "object") ||
+          (parsed.all_show_jumping === false &&
+            Array.isArray(parsed.individual_analyses))
         ) {
           setParsedData(parsed);
           if (parsed.all_show_jumping !== false) {
             setParseError("");
           }
         } else {
-          setParseError("Multi-image analysis data structure is incomplete or invalid");
+          setParseError(
+            "Multi-image analysis data structure is incomplete or invalid",
+          );
         }
       } else {
         // Check if this looks like an error message
-        if (analysis.toLowerCase().includes('internal server error') ||
-            analysis.toLowerCase().includes('error') ||
-            analysis.toLowerCase().includes('failed')) {
-          setParseError("Analysis service temporarily unavailable. Please try again in a moment.");
+        if (
+          analysis.toLowerCase().includes("internal server error") ||
+          analysis.toLowerCase().includes("error") ||
+          analysis.toLowerCase().includes("failed")
+        ) {
+          setParseError(
+            "Analysis service temporarily unavailable. Please try again in a moment.",
+          );
         } else {
-          setParseError("The analysis response could not be processed. Please try uploading your images again.");
+          setParseError(
+            "The analysis response could not be processed. Please try uploading your images again.",
+          );
         }
       }
     } catch (error) {
       setParseError("Failed to parse analysis data");
       console.error("Parse error:", error);
     }
-  }, [analysis]);
+  }, [analysis, uploadedImages?.length]);
 
   const copyToClipboard = async () => {
     try {
@@ -258,34 +284,41 @@ export function MultiImageAnalysis({
         let base64 = img.base64;
         if (!base64 && img.file) {
           // Convert to base64 if not already available
-          console.log('Converting file to base64:', img.file?.name);
+          console.log("Converting file to base64:", img.file?.name);
           base64 = await convertToBase64(img.file);
         }
 
-        console.log('Image data for PDF:', {
+        console.log("Image data for PDF:", {
           filename: img.filename || img.file?.name,
           mimeType: img.mimeType || img.file?.type,
           base64Length: base64?.length || 0,
           hasBase64: !!base64,
-          hasDataPrefix: base64?.startsWith('data:') || false
+          hasDataPrefix: base64?.startsWith("data:") || false,
         });
 
         if (base64) {
           pdfImages.push({
             base64,
             filename: img.filename || img.file?.name,
-            mimeType: img.mimeType || img.file?.type
+            mimeType: img.mimeType || img.file?.type,
           });
         }
       }
 
       await exportToEnhancedPDF({
         title: name || "Equestrian Analysis Report",
-        subtitle: description || `Multi-Image Analysis Results (${uploadedImages.length} Images)`,
-        filename: name ? name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') : "equestrian-multi-image-analysis",
+        subtitle:
+          description ||
+          `Multi-Image Analysis Results (${uploadedImages.length} Images)`,
+        filename: name
+          ? name
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, "-")
+              .replace(/^-|-$/g, "")
+          : "equestrian-multi-image-analysis",
         analysis: parsedData,
         images: pdfImages,
-        isMultiImage: true
+        isMultiImage: true,
       });
     } catch (error) {
       console.error("Failed to export PDF:", error);
@@ -351,39 +384,56 @@ export function MultiImageAnalysis({
           </CardHeader>
           <CardContent>
             {parseError && (
-              <div className={`border rounded-lg p-4 mb-4 ${
-                parseError.includes('show jumping content') || parseError.includes('Helio-Hoof analyzer')
-                  ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
-                  : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800'
-              }`}>
+              <div
+                className={`border rounded-lg p-4 mb-4 ${
+                  parseError.includes("show jumping content") ||
+                  parseError.includes("Helio-Hoof analyzer")
+                    ? "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800"
+                    : "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800"
+                }`}
+              >
                 <div className="flex items-start gap-3">
                   <div className="flex-shrink-0">
-                    <div className={`w-5 h-5 rounded-full flex items-center justify-center ${
-                      parseError.includes('show jumping content') || parseError.includes('Helio-Hoof analyzer')
-                        ? 'bg-blue-500'
-                        : 'bg-yellow-500'
-                    }`}>
+                    <div
+                      className={`w-5 h-5 rounded-full flex items-center justify-center ${
+                        parseError.includes("show jumping content") ||
+                        parseError.includes("Helio-Hoof analyzer")
+                          ? "bg-blue-500"
+                          : "bg-yellow-500"
+                      }`}
+                    >
                       <span className="text-white text-xs font-bold">
-                        {parseError.includes('show jumping content') || parseError.includes('Helio-Hoof analyzer') ? 'i' : '!'}
+                        {parseError.includes("show jumping content") ||
+                        parseError.includes("Helio-Hoof analyzer")
+                          ? "i"
+                          : "!"}
                       </span>
                     </div>
                   </div>
                   <div>
-                    <h4 className={`font-medium mb-1 ${
-                      parseError.includes('show jumping content') || parseError.includes('Helio-Hoof analyzer')
-                        ? 'text-blue-800 dark:text-blue-200'
-                        : 'text-yellow-800 dark:text-yellow-200'
-                    }`}>
-                      {parseError.includes('show jumping content') || parseError.includes('Helio-Hoof analyzer')
-                        ? 'Invalid Image Content'
-                        : 'Analysis Error'}
+                    <h4
+                      className={`font-medium mb-1 ${
+                        parseError.includes("show jumping content") ||
+                        parseError.includes("Helio-Hoof analyzer")
+                          ? "text-blue-800 dark:text-blue-200"
+                          : "text-yellow-800 dark:text-yellow-200"
+                      }`}
+                    >
+                      {parseError.includes("show jumping content") ||
+                      parseError.includes("Helio-Hoof analyzer")
+                        ? "Invalid Image Content"
+                        : "Analysis Error"}
                     </h4>
-                    <p className={`text-sm ${
-                      parseError.includes('show jumping content') || parseError.includes('Helio-Hoof analyzer')
-                        ? 'text-blue-700 dark:text-blue-300'
-                        : 'text-yellow-700 dark:text-yellow-300'
-                    }`}>
-                      {parseError.includes('show jumping content') || parseError.includes('Helio-Hoof analyzer')
+                    <p
+                      className={`text-sm ${
+                        parseError.includes("show jumping content") ||
+                        parseError.includes("Helio-Hoof analyzer")
+                          ? "text-blue-700 dark:text-blue-300"
+                          : "text-yellow-700 dark:text-yellow-300"
+                      }`}
+                    >
+                      {parseError.includes("show jumping content") ||
+                      parseError.includes("Helio-Hoof analyzer")
                         ? parseError
                         : `${parseError}. Showing raw response:`}
                     </p>
@@ -392,7 +442,11 @@ export function MultiImageAnalysis({
               </div>
             )}
             {/* Only show raw response if it's not a validation error */}
-            {!(parseError && (parseError.includes('show jumping content') || parseError.includes('Helio-Hoof analyzer'))) && (
+            {!(
+              parseError &&
+              (parseError.includes("show jumping content") ||
+                parseError.includes("Helio-Hoof analyzer"))
+            ) && (
               <div className="prose prose-sm max-w-none dark:prose-invert">
                 <div className="whitespace-pre-wrap text-gray-700 dark:text-gray-300 leading-relaxed">
                   {analysis}
@@ -498,10 +552,14 @@ export function MultiImageAnalysis({
                     <CardHeader className="pb-4">
                       <CardTitle className="flex items-center gap-3 text-lg">
                         <div className="w-8 h-8 bg-gradient-to-r from-slate-600 to-gray-600 rounded-lg flex items-center justify-center shadow-sm">
-                          <span className="text-white font-bold text-sm">{imageAnalysis.image_number}</span>
+                          <span className="text-white font-bold text-sm">
+                            {imageAnalysis.image_number}
+                          </span>
                         </div>
                         <div>
-                          <span className="font-bold text-gray-800 dark:text-gray-200">Image {imageAnalysis.image_number}</span>
+                          <span className="font-bold text-gray-800 dark:text-gray-200">
+                            Image {imageAnalysis.image_number}
+                          </span>
                           <div className="h-1 w-12 bg-gradient-to-r from-slate-600 to-gray-600 rounded-full mt-1"></div>
                         </div>
                       </CardTitle>
@@ -521,7 +579,9 @@ export function MultiImageAnalysis({
                             />
                             <div className="absolute top-2 right-2">
                               <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm px-2 py-1 rounded-full shadow-sm">
-                                <span className="text-xs font-medium text-gray-700 dark:text-gray-300">#{imageAnalysis.image_number}</span>
+                                <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                                  #{imageAnalysis.image_number}
+                                </span>
                               </div>
                             </div>
                             <div className="absolute bottom-2 left-2 right-2">

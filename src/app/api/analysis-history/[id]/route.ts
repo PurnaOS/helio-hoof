@@ -1,12 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
+import { and, eq } from "drizzle-orm";
+import { type NextRequest, NextResponse } from "next/server";
 import { db, schema } from "@/lib/db";
-import { eq, and } from "drizzle-orm";
 
 // GET - Retrieve specific analysis by ID
 export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { userId } = await auth();
@@ -23,15 +23,15 @@ export async function GET(
       .where(
         and(
           eq(schema.analysisHistory.id, id),
-          eq(schema.analysisHistory.userId, userId)
-        )
+          eq(schema.analysisHistory.userId, userId),
+        ),
       )
       .limit(1);
 
     if (analysis.length === 0) {
       return NextResponse.json(
         { error: "Analysis not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -40,15 +40,15 @@ export async function GET(
     console.error("Error fetching analysis:", error);
     return NextResponse.json(
       { error: "Failed to fetch analysis" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
 // DELETE - Delete specific analysis
 export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { userId } = await auth();
@@ -64,15 +64,15 @@ export async function DELETE(
       .where(
         and(
           eq(schema.analysisHistory.id, id),
-          eq(schema.analysisHistory.userId, userId)
-        )
+          eq(schema.analysisHistory.userId, userId),
+        ),
       )
       .returning();
 
     if (result.length === 0) {
       return NextResponse.json(
         { error: "Analysis not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -81,7 +81,7 @@ export async function DELETE(
     console.error("Error deleting analysis:", error);
     return NextResponse.json(
       { error: "Failed to delete analysis" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

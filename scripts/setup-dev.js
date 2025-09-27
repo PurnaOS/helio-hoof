@@ -5,11 +5,11 @@
  * Helps configure the application for development with mock LLM mode
  */
 
-const fs = require('fs');
-const path = require('path');
+const fs = require("node:fs");
+const path = require("node:path");
 
-const ENV_LOCAL_PATH = path.join(process.cwd(), '.env.local');
-const ENV_DEV_PATH = path.join(process.cwd(), '.env.development');
+const ENV_LOCAL_PATH = path.join(process.cwd(), ".env.local");
+const _ENV_DEV_PATH = path.join(process.cwd(), ".env.development");
 
 function createEnvLocal() {
   const envContent = `# Development Environment Configuration
@@ -27,31 +27,31 @@ USE_MOCK_LLM=true
 `;
 
   fs.writeFileSync(ENV_LOCAL_PATH, envContent);
-  console.log('✅ Created .env.local with mock mode enabled');
-  console.log('💡 No API costs will be incurred in this mode');
+  console.log("✅ Created .env.local with mock mode enabled");
+  console.log("💡 No API costs will be incurred in this mode");
   console.log();
-  console.log('To use the real API later:');
-  console.log('1. Edit .env.local');
-  console.log('2. Set USE_MOCK_LLM=false');
-  console.log('3. Set ANTHROPIC_API_KEY=your_actual_key');
+  console.log("To use the real API later:");
+  console.log("1. Edit .env.local");
+  console.log("2. Set USE_MOCK_LLM=false");
+  console.log("3. Set ANTHROPIC_API_KEY=your_actual_key");
 }
 
 function checkExistingConfig() {
   if (fs.existsSync(ENV_LOCAL_PATH)) {
-    const content = fs.readFileSync(ENV_LOCAL_PATH, 'utf8');
-    const hasMockConfig = content.includes('USE_MOCK_LLM');
+    const content = fs.readFileSync(ENV_LOCAL_PATH, "utf8");
+    const hasMockConfig = content.includes("USE_MOCK_LLM");
 
     if (hasMockConfig) {
-      console.log('⚠️  .env.local already exists with configuration');
-      console.log('Current configuration will be preserved');
+      console.log("⚠️  .env.local already exists with configuration");
+      console.log("Current configuration will be preserved");
       return true;
     } else {
-      console.log('📝 .env.local exists but missing mock configuration');
-      console.log('Adding mock LLM configuration...');
+      console.log("📝 .env.local exists but missing mock configuration");
+      console.log("Adding mock LLM configuration...");
 
       const mockConfig = `\n# Mock LLM Configuration\nUSE_MOCK_LLM=true\n`;
       fs.appendFileSync(ENV_LOCAL_PATH, mockConfig);
-      console.log('✅ Added mock configuration to existing .env.local');
+      console.log("✅ Added mock configuration to existing .env.local");
       return true;
     }
   }
@@ -59,24 +59,24 @@ function checkExistingConfig() {
 }
 
 function main() {
-  console.log('🏇 Helio-Hoof Development Setup');
-  console.log('================================');
+  console.log("🏇 Helio-Hoof Development Setup");
+  console.log("================================");
   console.log();
 
   if (checkExistingConfig()) {
     console.log();
-    console.log('🚀 Ready for development!');
-    console.log('Run: bun run dev');
+    console.log("🚀 Ready for development!");
+    console.log("Run: bun run dev");
     return;
   }
 
   createEnvLocal();
 
   console.log();
-  console.log('🚀 Setup complete! Ready for development.');
-  console.log('Run: bun run dev');
+  console.log("🚀 Setup complete! Ready for development.");
+  console.log("Run: bun run dev");
   console.log();
-  console.log('📚 See DEVELOPMENT.md for more information');
+  console.log("📚 See DEVELOPMENT.md for more information");
 }
 
 main();
