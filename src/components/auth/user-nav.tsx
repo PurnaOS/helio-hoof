@@ -21,8 +21,8 @@ export function UserNav() {
         <Link href="/sign-in">
           <Button variant="ghost">Sign In</Button>
         </Link>
-        <Link href="/sign-up">
-          <Button>Sign Up</Button>
+        <Link href="/waitlist">
+          <Button>Join Waitlist</Button>
         </Link>
       </div>
     );

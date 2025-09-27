@@ -11,7 +11,10 @@ const isProtectedRoute = createRouteMatcher([
 export default clerkMiddleware(async (auth, req) => {
   // Protect routes that require authentication
   if (isProtectedRoute(req)) {
-    await auth.protect();
+    await auth.protect({
+      // Redirect to waitlist instead of default sign-in
+      unauthenticatedUrl: "/waitlist",
+    });
   }
 });
 

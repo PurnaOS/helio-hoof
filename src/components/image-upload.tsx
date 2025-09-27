@@ -113,19 +113,18 @@ export function ImageUpload({ onAnalysis, onError }: ImageUploadProps) {
               <div className="mb-6">
                 <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                  Sign in to start analyzing
+                  Join our waitlist to start analyzing
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400">
-                  Create an account or sign in to upload and analyze your show
-                  jumping images
+                  We're currently in private beta. Join our waitlist to get early access to our show jumping analysis platform
                 </p>
               </div>
               <div className="flex gap-4 justify-center">
                 <Link href="/sign-in">
                   <Button variant="outline">Sign In</Button>
                 </Link>
-                <Link href="/sign-up">
-                  <Button>Get Started</Button>
+                <Link href="/waitlist">
+                  <Button>Join Waitlist</Button>
                 </Link>
               </div>
             </div>
