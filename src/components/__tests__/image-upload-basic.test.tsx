@@ -1,5 +1,4 @@
 import { render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock all external dependencies with simple implementations
 vi.mock("@clerk/nextjs", () => ({

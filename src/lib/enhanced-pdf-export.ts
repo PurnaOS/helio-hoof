@@ -228,14 +228,14 @@ export function generatePDFContent(options: EnhancedPDFExportOptions) {
           <div style="margin-bottom: 16px;">
             <h4 class="positive-text" style="font-size: 1.125rem; margin-bottom: 8px;">✓ Positives</h4>
             <ul class="space-y-2">
-              ${analysis.rider_analysis.positives.map((positive: string) => `<li style="font-size: 0.875rem;">• ${positive}</li>`).join("")}
+              ${analysis.rider_analysis?.positives?.map((positive: string) => `<li style="font-size: 0.875rem;">• ${positive}</li>`)?.join("") || '<li style="font-size: 0.875rem;">No positive feedback available</li>'}
             </ul>
           </div>
 
           <div style="margin-bottom: 16px;">
             <h4 class="improvement-text" style="font-size: 1.125rem; margin-bottom: 8px;">⚠ Areas for Improvement</h4>
             <ul class="space-y-2">
-              ${analysis.rider_analysis.areas_for_improvement.map((area: string) => `<li style="font-size: 0.875rem;">• ${area}</li>`).join("")}
+              ${analysis.rider_analysis?.areas_for_improvement?.map((area: string) => `<li style="font-size: 0.875rem;">• ${area}</li>`)?.join("") || '<li style="font-size: 0.875rem;">No areas for improvement identified</li>'}
             </ul>
           </div>
 
@@ -243,7 +243,7 @@ export function generatePDFContent(options: EnhancedPDFExportOptions) {
             <h4 class="priority-text" style="font-size: 1.125rem; margin-bottom: 8px;">🎯 Priority Focus</h4>
             <div class="section-bg-blue">
               <p style="font-size: 0.875rem; line-height: 1.6;">
-                ${analysis.rider_analysis.priority_focus}
+                ${analysis.rider_analysis?.priority_focus || "No priority focus identified"}
               </p>
             </div>
           </div>
@@ -256,14 +256,14 @@ export function generatePDFContent(options: EnhancedPDFExportOptions) {
           <div style="margin-bottom: 16px;">
             <h4 class="positive-text" style="font-size: 1.125rem; margin-bottom: 8px;">✓ Positives</h4>
             <ul class="space-y-2">
-              ${analysis.horse_analysis.positives.map((positive: string) => `<li style="font-size: 0.875rem;">• ${positive}</li>`).join("")}
+              ${analysis.horse_analysis?.positives?.map((positive: string) => `<li style="font-size: 0.875rem;">• ${positive}</li>`)?.join("") || '<li style="font-size: 0.875rem;">No positive feedback available</li>'}
             </ul>
           </div>
 
           <div style="margin-bottom: 16px;">
             <h4 style="font-weight: 600; font-size: 1.125rem; margin-bottom: 8px;">🔧 Technical Notes</h4>
             <ul class="space-y-2">
-              ${analysis.horse_analysis.technical_notes.map((note: string) => `<li style="font-size: 0.875rem;">• ${note}</li>`).join("")}
+              ${analysis.horse_analysis?.technical_notes?.map((note: string) => `<li style="font-size: 0.875rem;">• ${note}</li>`)?.join("") || '<li style="font-size: 0.875rem;">No technical notes available</li>'}
             </ul>
           </div>
 
@@ -271,7 +271,7 @@ export function generatePDFContent(options: EnhancedPDFExportOptions) {
             <h4 style="font-weight: 600; font-size: 1.125rem; margin-bottom: 8px;">🏃 Athletic Assessment</h4>
             <div class="section-bg-gray">
               <p style="font-size: 0.875rem; line-height: 1.6;">
-                ${analysis.horse_analysis.athletic_assessment}
+                ${analysis.horse_analysis?.athletic_assessment || "No athletic assessment available"}
               </p>
             </div>
           </div>
@@ -285,7 +285,7 @@ export function generatePDFContent(options: EnhancedPDFExportOptions) {
             <h4 style="font-weight: 600; font-size: 1.125rem; margin-bottom: 8px;">Partnership Evaluation</h4>
             <div class="section-bg-green">
               <p style="font-size: 0.875rem; line-height: 1.6;">
-                ${analysis.partnership_notes}
+                ${analysis.partnership_notes || "No partnership notes available"}
               </p>
             </div>
           </div>
@@ -294,7 +294,7 @@ export function generatePDFContent(options: EnhancedPDFExportOptions) {
             <h4 style="font-weight: 600; font-size: 1.125rem; margin-bottom: 8px;">Safety Observations</h4>
             <div class="section-bg-yellow">
               <p style="font-size: 0.875rem; line-height: 1.6;">
-                ${analysis.safety_observations}
+                ${analysis.safety_observations || "No safety observations available"}
               </p>
             </div>
           </div>
@@ -306,7 +306,9 @@ export function generatePDFContent(options: EnhancedPDFExportOptions) {
 
   // Generate comparative analysis for multi-image
   const comparativeAnalysisHTML =
-    isMultiImage && analysis.comparative_analysis
+    isMultiImage &&
+    analysis.comparative_analysis &&
+    typeof analysis.comparative_analysis === "object"
       ? `
     <div class="page-break"></div>
     <div class="pdf-card avoid-break">
@@ -317,35 +319,35 @@ export function generatePDFContent(options: EnhancedPDFExportOptions) {
         <div class="avoid-break">
           <h4 style="font-weight: 600; margin-bottom: 8px;">Overall Assessment</h4>
           <div class="section-bg-blue">
-            <p style="font-size: 0.875rem; line-height: 1.6;">${analysis.comparative_analysis.overall_assessment}</p>
+            <p style="font-size: 0.875rem; line-height: 1.6;">${(analysis.comparative_analysis as any)?.overall_assessment || "No overall assessment available"}</p>
           </div>
         </div>
 
         <div class="avoid-break">
           <h4 style="font-weight: 600; margin-bottom: 8px;">Consistency Notes</h4>
           <div class="section-bg-gray">
-            <p style="font-size: 0.875rem; line-height: 1.6;">${analysis.comparative_analysis.consistency_notes}</p>
+            <p style="font-size: 0.875rem; line-height: 1.6;">${(analysis.comparative_analysis as any)?.consistency_notes || "No consistency notes available"}</p>
           </div>
         </div>
 
         <div class="avoid-break">
           <h4 class="positive-text" style="margin-bottom: 8px;">Best Performing Image</h4>
           <div class="section-bg-green">
-            <p style="font-size: 0.875rem; line-height: 1.6;">${analysis.comparative_analysis.best_performing_image}</p>
+            <p style="font-size: 0.875rem; line-height: 1.6;">${(analysis.comparative_analysis as any)?.best_performing_image || "No best performing image identified"}</p>
           </div>
         </div>
 
         <div class="avoid-break">
           <h4 style="font-weight: 600; margin-bottom: 8px;">Development Patterns</h4>
           <div class="section-bg-gray">
-            <p style="font-size: 0.875rem; line-height: 1.6;">${analysis.comparative_analysis.development_patterns}</p>
+            <p style="font-size: 0.875rem; line-height: 1.6;">${(analysis.comparative_analysis as any)?.development_patterns || "No development patterns identified"}</p>
           </div>
         </div>
 
         <div class="avoid-break">
           <h4 class="priority-text" style="margin-bottom: 8px;">Priority Focus Areas</h4>
           <ul class="space-y-2">
-            ${analysis.comparative_analysis.priority_focus_areas.map((area: string) => `<li style="font-size: 0.875rem;">• ${area}</li>`).join("")}
+            ${(analysis.comparative_analysis as any)?.priority_focus_areas?.map((area: string) => `<li style="font-size: 0.875rem;">• ${area}</li>`)?.join("") || '<li style="font-size: 0.875rem;">No priority focus areas identified</li>'}
           </ul>
         </div>
       </div>

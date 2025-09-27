@@ -1,0 +1,114 @@
+# Vercel build ignore file
+# Files and directories to ignore during Vercel builds
+
+# Development files
+.env.local
+.env.development
+.env.test
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+coverage/
+.nyc_output
+test-results/
+playwright-report/
+e2e-results/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Documentation (not needed for runtime)
+README.md
+DEPLOYMENT.md
+docs/
+
+# Scripts (not needed for runtime)
+scripts/
+*.sh
+
+# Development tools config
+.biome.json
+.eslintrc.*
+.prettierrc
+.prettierignore
+tsconfig.json
+vitest.config.*
+playwright.config.*
+
+# GitHub workflows and templates
+.github/
+
+# Temporary files
+tmp/
+temp/
+
+# Backup files
+*.bak
+*.backup
+
+# Archive files
+*.zip
+*.tar.gz
+*.rar
+
+# Local development certificates
+*.pem
+*.key
+*.crt
+
+# Yarn
+.yarn/
+.yarnrc.yml
+
+# npm
+.npm
+.npmrc
+
+# Package manager locks (Vercel will use package.json)
+yarn.lock
+pnpm-lock.yaml
+
+# Build artifacts from other tools
+dist/
+build/
+out/
+
+# Lighthouse reports
+lighthouse-report.*
+
+# Performance monitoring
+.next/analyze/
+
+# Database files (if any local DBs)
+*.db
+*.sqlite
+*.sqlite3
+
+# Cache directories
+.cache/
+node_modules/.cache/
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

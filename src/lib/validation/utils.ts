@@ -106,9 +106,9 @@ export function validateRequest<T>(schema: ZodSchema<T>) {
       return { data: validatedData };
     } catch (error) {
       if (error instanceof ZodError) {
-        const details =
-          error.errors?.map((err) => `${err.path.join(".")}: ${err.message}`) ||
-          [];
+        const details = error.issues.map(
+          (err) => `${err.path.join(".")}: ${err.message}`,
+        );
         return {
           error: createErrorResponse(
             "Validation failed",
@@ -141,9 +141,9 @@ export function validateQuery<T>(
     return { data: validatedData };
   } catch (error) {
     if (error instanceof ZodError) {
-      const details =
-        error.errors?.map((err) => `${err.path.join(".")}: ${err.message}`) ||
-        [];
+      const details = error.issues.map(
+        (err) => `${err.path.join(".")}: ${err.message}`,
+      );
       return {
         error: createErrorResponse(
           "Query parameter validation failed",
@@ -200,7 +200,7 @@ export function sanitizeObject<T extends Record<string, unknown>>(
   }
   visited.add(obj);
 
-  const sanitized = { ...obj };
+  const sanitized = { ...obj } as any;
 
   for (const [key, value] of Object.entries(sanitized)) {
     if (value === null || value === undefined) {

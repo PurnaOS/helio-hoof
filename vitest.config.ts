@@ -14,7 +14,13 @@ export default defineConfig({
     testTimeout: 15000, // Increase timeout for reliability
     hookTimeout: 15000, // Increase hook timeout
     include: ["src/**/*.{test,spec}.{js,ts,jsx,tsx}"],
-    exclude: ["tests/**/*", "node_modules/**/*", "**/*.e2e.{js,ts}"],
+    exclude: [
+      "tests/**/*",
+      "node_modules/**/*",
+      "**/*.e2e.{js,ts}",
+      "**/*.spec.ts",
+      "**/playwright.config.ts",
+    ],
     pool: "forks", // Use forks for better isolation
     poolOptions: {
       forks: {

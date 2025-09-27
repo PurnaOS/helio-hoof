@@ -94,7 +94,7 @@ export const createAnalysisHistorySchema = z.object({
   analysisType: z.enum(["single", "multi"]),
   analysisResult: z.string().min(1, "Analysis result is required"),
   images: z.array(imageMetadataSchema).min(1, "At least one image is required"),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
   name: z.string().max(255).optional(),
   description: z.string().max(1000).optional(),
 });

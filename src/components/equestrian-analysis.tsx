@@ -33,6 +33,7 @@ interface EquestrianAnalysisData {
   };
   partnership_notes: string;
   safety_observations: string;
+  [key: string]: unknown;
 }
 
 interface ApiResponse {

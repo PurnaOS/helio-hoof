@@ -1,0 +1,297 @@
+name: Emergency Rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to rollback'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - staging
+        - production
+      deployment_id:
+        description: 'Specific deployment ID to rollback to (leave empty for automatic)'
+        required: false
+        type: string
+      reason:
+        description: 'Reason for rollback'
+        required: true
+        type: string
+
+jobs:
+  rollback:
+    name: Emergency Rollback
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: ${{ github.event.inputs.environment }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.1.38'
+
+      - name: Install Vercel CLI
+        run: bun add -g vercel
+
+      - name: Authenticate with Vercel
+        run: |
+          echo "${{ secrets.VERCEL_TOKEN }}" | vercel login --stdin
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+      - name: Link Vercel project
+        run: |
+          vercel link --yes --token="${{ secrets.VERCEL_TOKEN }}"
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Validate rollback request
+        run: |
+          echo "Rollback Request Details:"
+          echo "Environment: ${{ github.event.inputs.environment }}"
+          echo "Deployment ID: ${{ github.event.inputs.deployment_id || 'Auto-select latest' }}"
+          echo "Reason: ${{ github.event.inputs.reason }}"
+          echo "Triggered by: ${{ github.actor }}"
+          echo "Timestamp: $(date)"
+
+      - name: Get current deployment info
+        id: current-deployment
+        run: |
+          CURRENT_DEPLOYMENT=$(vercel ls --environment=${{ github.event.inputs.environment }} --token="${{ secrets.VERCEL_TOKEN }}" --format=plain | head -n1 | awk '{print $1}')
+          echo "current_deployment=$CURRENT_DEPLOYMENT" >> $GITHUB_OUTPUT
+
+          CURRENT_URL=$(vercel inspect "$CURRENT_DEPLOYMENT" --token="${{ secrets.VERCEL_TOKEN }}" --format=json | jq -r '.url')
+          echo "current_url=https://$CURRENT_URL" >> $GITHUB_OUTPUT
+
+          echo "Current deployment: $CURRENT_DEPLOYMENT"
+          echo "Current URL: https://$CURRENT_URL"
+
+      - name: Determine rollback target
+        id: rollback-target
+        run: |
+          if [[ -n "${{ github.event.inputs.deployment_id }}" ]]; then
+            TARGET_DEPLOYMENT="${{ github.event.inputs.deployment_id }}"
+            echo "Using specified deployment: $TARGET_DEPLOYMENT"
+          else
+            # Get the second most recent deployment (skip current)
+            TARGET_DEPLOYMENT=$(vercel ls --environment=${{ github.event.inputs.environment }} --token="${{ secrets.VERCEL_TOKEN }}" --format=plain | sed -n '2p' | awk '{print $1}')
+            echo "Auto-selected deployment: $TARGET_DEPLOYMENT"
+          fi
+
+          if [[ -z "$TARGET_DEPLOYMENT" ]]; then
+            echo "Error: No rollback target found"
+            exit 1
+          fi
+
+          echo "target_deployment=$TARGET_DEPLOYMENT" >> $GITHUB_OUTPUT
+
+      - name: Validate rollback target
+        run: |
+          TARGET_DEPLOYMENT="${{ steps.rollback-target.outputs.target_deployment }}"
+
+          # Check if deployment exists
+          if ! vercel inspect "$TARGET_DEPLOYMENT" --token="${{ secrets.VERCEL_TOKEN }}" &> /dev/null; then
+            echo "Error: Deployment $TARGET_DEPLOYMENT not found"
+            exit 1
+          fi
+
+          # Get deployment details
+          DEPLOYMENT_INFO=$(vercel inspect "$TARGET_DEPLOYMENT" --token="${{ secrets.VERCEL_TOKEN }}" --format=json)
+          DEPLOYMENT_STATE=$(echo "$DEPLOYMENT_INFO" | jq -r '.readyState')
+          DEPLOYMENT_ENV=$(echo "$DEPLOYMENT_INFO" | jq -r '.target // "preview"')
+
+          echo "Target deployment state: $DEPLOYMENT_STATE"
+          echo "Target deployment environment: $DEPLOYMENT_ENV"
+
+          # Validate deployment is ready
+          if [[ "$DEPLOYMENT_STATE" != "READY" ]]; then
+            echo "Error: Target deployment is not ready (state: $DEPLOYMENT_STATE)"
+            exit 1
+          fi
+
+          echo "Rollback target validation passed"
+
+      - name: Create rollback snapshot
+        run: |
+          SNAPSHOT_FILE="rollback-snapshot-$(date +%Y%m%d-%H%M%S).json"
+
+          cat > "$SNAPSHOT_FILE" << EOF
+          {
+            "rollback_timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "environment": "${{ github.event.inputs.environment }}",
+            "reason": "${{ github.event.inputs.reason }}",
+            "triggered_by": "${{ github.actor }}",
+            "workflow_run_id": "${{ github.run_id }}",
+            "current_deployment": "${{ steps.current-deployment.outputs.current_deployment }}",
+            "target_deployment": "${{ steps.rollback-target.outputs.target_deployment }}",
+            "current_url": "${{ steps.current-deployment.outputs.current_url }}"
+          }
+          EOF
+
+          echo "Rollback snapshot created: $SNAPSHOT_FILE"
+          cat "$SNAPSHOT_FILE"
+
+      - name: Execute rollback
+        id: rollback
+        run: |
+          TARGET_DEPLOYMENT="${{ steps.rollback-target.outputs.target_deployment }}"
+          ENVIRONMENT="${{ github.event.inputs.environment }}"
+
+          echo "Executing rollback to deployment: $TARGET_DEPLOYMENT"
+
+          # Execute the rollback
+          if vercel promote "$TARGET_DEPLOYMENT" --environment="$ENVIRONMENT" --token="${{ secrets.VERCEL_TOKEN }}"; then
+            echo "rollback_status=success" >> $GITHUB_OUTPUT
+            echo "Rollback completed successfully"
+          else
+            echo "rollback_status=failed" >> $GITHUB_OUTPUT
+            echo "Rollback failed"
+            exit 1
+          fi
+
+      - name: Wait for deployment
+        run: |
+          echo "Waiting for deployment to be ready..."
+          sleep 30
+
+      - name: Verify rollback
+        id: verify
+        run: |
+          TARGET_DEPLOYMENT="${{ steps.rollback-target.outputs.target_deployment }}"
+
+          # Get deployment URL
+          DEPLOYMENT_URL="https://$(vercel inspect "$TARGET_DEPLOYMENT" --token="${{ secrets.VERCEL_TOKEN }}" --format=json | jq -r '.url')"
+          echo "verification_url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
+
+          echo "Verifying rollback at: $DEPLOYMENT_URL"
+
+          # Health check with retries
+          MAX_RETRIES=5
+          RETRY_COUNT=0
+
+          while [[ $RETRY_COUNT -lt $MAX_RETRIES ]]; do
+            echo "Health check attempt $((RETRY_COUNT + 1))/$MAX_RETRIES"
+
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$DEPLOYMENT_URL/api/health" || echo "000")
+
+            if [[ "$HTTP_STATUS" == "200" ]]; then
+              echo "verification_status=success" >> $GITHUB_OUTPUT
+              echo "Health check passed"
+              break
+            else
+              echo "Health check failed with status: $HTTP_STATUS"
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+
+              if [[ $RETRY_COUNT -lt $MAX_RETRIES ]]; then
+                echo "Retrying in 30 seconds..."
+                sleep 30
+              else
+                echo "verification_status=failed" >> $GITHUB_OUTPUT
+                echo "Health check failed after $MAX_RETRIES attempts"
+                exit 1
+              fi
+            fi
+          done
+
+      - name: Notify success
+        if: steps.rollback.outputs.rollback_status == 'success' && steps.verify.outputs.verification_status == 'success'
+        uses: 8398a7/action-slack@v3
+        with:
+          status: custom
+          custom_payload: |
+            {
+              "text": "✅ Emergency Rollback Successful",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Emergency Rollback Completed Successfully*\n\n*Environment:* ${{ github.event.inputs.environment }}\n*From:* ${{ steps.current-deployment.outputs.current_deployment }}\n*To:* ${{ steps.rollback-target.outputs.target_deployment }}\n*Reason:* ${{ github.event.inputs.reason }}\n*Triggered by:* ${{ github.actor }}\n*Verification URL:* ${{ steps.verify.outputs.verification_url }}\n*Timestamp:* $(date)"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Notify failure
+        if: failure()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: custom
+          custom_payload: |
+            {
+              "text": "❌ Emergency Rollback Failed",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Emergency Rollback Failed*\n\n*Environment:* ${{ github.event.inputs.environment }}\n*Target:* ${{ steps.rollback-target.outputs.target_deployment }}\n*Reason:* ${{ github.event.inputs.reason }}\n*Triggered by:* ${{ github.actor }}\n*Workflow:* https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\n*Timestamp:* $(date)"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Create incident issue
+        if: failure() && github.event.inputs.environment == 'production'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🚨 Production Rollback Failed - ${{ github.event.inputs.reason }}`,
+              body: `
+              ## Emergency Rollback Failed
+
+              **Environment:** ${{ github.event.inputs.environment }}
+              **Target Deployment:** ${{ steps.rollback-target.outputs.target_deployment }}
+              **Reason:** ${{ github.event.inputs.reason }}
+              **Triggered by:** ${{ github.actor }}
+              **Workflow Run:** https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+              **Timestamp:** $(date)
+
+              ## Next Steps
+
+              1. Investigate rollback failure
+              2. Consider manual intervention
+              3. Check deployment logs
+              4. Verify system health
+
+              ## Current Status
+
+              - [ ] Root cause identified
+              - [ ] Manual rollback attempted
+              - [ ] System stability verified
+              - [ ] Incident resolved
+              `,
+              labels: ['incident', 'production', 'rollback-failure', 'critical']
+            });
+
+            console.log('Created incident issue:', issue.data.html_url);
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Rollback Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment:** ${{ github.event.inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Reason:** ${{ github.event.inputs.reason }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Triggered by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **From Deployment:** ${{ steps.current-deployment.outputs.current_deployment }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **To Deployment:** ${{ steps.rollback-target.outputs.target_deployment }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Rollback Status:** ${{ steps.rollback.outputs.rollback_status || 'Not executed' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Verification Status:** ${{ steps.verify.outputs.verification_status || 'Not verified' }}" >> $GITHUB_STEP_SUMMARY
+
+          if [[ "${{ steps.verify.outputs.verification_url }}" != "" ]]; then
+            echo "- **Verification URL:** ${{ steps.verify.outputs.verification_url }}" >> $GITHUB_STEP_SUMMARY
+          fi

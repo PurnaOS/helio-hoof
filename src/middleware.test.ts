@@ -1,5 +1,4 @@
 import { NextRequest } from "next/server";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // Create mock functions that will be used in the mock factory
 const mockProtect = vi.fn();

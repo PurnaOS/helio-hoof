@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { beforeEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
+// Using vitest globals
 import {
   ApiErrorCode,
   checkRateLimit,

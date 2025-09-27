@@ -28,6 +28,7 @@ interface IndividualAnalysis {
   rider_weaknesses: string[];
   horse_strengths: string[];
   improvements: string[];
+  [key: string]: unknown;
 }
 
 interface ComparativeAnalysis {
@@ -43,6 +44,7 @@ interface MultiImageAnalysisData {
   comparative_analysis: ComparativeAnalysis;
   partnership_evaluation: string;
   safety_observations: string;
+  [key: string]: unknown;
 }
 
 interface MultiImageApiResponse {

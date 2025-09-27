@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+// Using vitest globals
 
 // Test that all exports are available from the index file
 describe("Validation Index Exports", () => {

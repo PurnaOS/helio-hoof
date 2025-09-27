@@ -266,22 +266,27 @@ export async function mockAnalyzeImage({
   // 50% chance of show jumping, 50% chance of non-show jumping for testing validation
   const isShowJumping = Math.random() > 0.5;
 
-  let response: string;
+  let mockData: (typeof SINGLE_IMAGE_RESPONSES)[0];
   if (isShowJumping) {
     // Select from show jumping responses (exclude the last 4 non-show jumping ones)
     const showJumpingResponses = SINGLE_IMAGE_RESPONSES.slice(0, -4);
-    response =
+    mockData =
       showJumpingResponses[
         Math.floor(Math.random() * showJumpingResponses.length)
       ];
   } else {
     // Select from one of the 4 non-show jumping validation responses
     const validationResponses = SINGLE_IMAGE_RESPONSES.slice(-4);
-    response =
+    mockData =
       validationResponses[
         Math.floor(Math.random() * validationResponses.length)
       ];
   }
+
+  const response: ImageAnalysisResponse = {
+    analysis: JSON.stringify(mockData),
+    success: true,
+  };
 
   return {
     analysis: JSON.stringify(response, null, 2),
@@ -306,7 +311,7 @@ export async function mockAnalyzeMultipleImages(
   // 30% chance all images are show jumping, 70% chance of mixed/invalid content for better validation testing
   const allShowJumping = Math.random() > 0.7;
 
-  let mockResponse: string;
+  let mockData: (typeof MULTI_IMAGE_RESPONSES)[0];
   if (allShowJumping) {
     // Use the first response (all show jumping)
     const baseResponse = MULTI_IMAGE_RESPONSES[0];
@@ -318,10 +323,10 @@ export async function mockAnalyzeMultipleImages(
       key_observations: `Analysis for image ${index + 1} showing good technical execution`,
     }));
 
-    mockResponse = {
+    mockData = {
       ...baseResponse,
       individual_analyses: individualAnalyses,
-    };
+    } as (typeof MULTI_IMAGE_RESPONSES)[0];
   } else {
     // 40% chance that NO images are valid (stricter validation)
     // 60% chance that some images are valid
@@ -333,10 +338,10 @@ export async function mockAnalyzeMultipleImages(
     if (validImageCount === 0) {
       // Use the "all invalid" response template
       const baseResponse = MULTI_IMAGE_RESPONSES[2]; // The new "all invalid" template
-      mockResponse = {
+      mockData = {
         ...baseResponse,
         invalid_images: Array.from({ length: images.length }, (_, i) => i + 1),
-      };
+      } as (typeof MULTI_IMAGE_RESPONSES)[0];
     } else {
       // Use the mixed content response, adapting for actual number of images
       const baseResponse = MULTI_IMAGE_RESPONSES[1];
@@ -349,7 +354,7 @@ export async function mockAnalyzeMultipleImages(
         (_, i) => validImageCount + i + 1,
       );
 
-      mockResponse = {
+      mockData = {
         ...baseResponse,
         show_jumping_count: validImageCount,
         valid_images: validImages,
@@ -361,12 +366,17 @@ export async function mockAnalyzeMultipleImages(
           horse_score: Math.floor(Math.random() * 3) + 7,
           key_observations: `Analysis for image ${imageNum} showing show jumping technique`,
         })),
-      };
+      } as (typeof MULTI_IMAGE_RESPONSES)[0];
     }
   }
 
+  const response: ImageAnalysisResponse = {
+    analysis: JSON.stringify(mockData),
+    success: true,
+  };
+
   return {
-    analysis: JSON.stringify(mockResponse, null, 2),
+    analysis: JSON.stringify(response, null, 2),
     success: true,
   };
 }

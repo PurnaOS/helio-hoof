@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+
+// Using vitest globals
 
 // Simple mock data
 const mockUploadedImages = [

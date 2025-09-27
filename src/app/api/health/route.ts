@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { getConnectionInfo, healthCheck } from "@/lib/db";
 import { checkEnvHealth, validateEnvSafe } from "@/lib/validation/env";
 import {
   ApiErrorCode,
@@ -14,12 +15,17 @@ export async function GET(_request: NextRequest) {
     const envHealth = checkEnvHealth();
     const envValidation = validateEnvSafe();
 
+    // Perform database health check
+    const dbHealth = await healthCheck();
+    const dbInfo = getConnectionInfo();
+
     // Basic health checks
     const health = {
       status: "healthy",
       timestamp: new Date().toISOString(),
       environment: process.env.NODE_ENV,
       version: process.env.npm_package_version || "unknown",
+      uptime: process.uptime(),
       checks: {
         environment: {
           status: envHealth.valid ? "pass" : "fail",
@@ -34,10 +40,13 @@ export async function GET(_request: NextRequest) {
             : envValidation.errors?.join(", "),
         },
         database: {
-          status: process.env.NEON_DATABASE_URL ? "pass" : "fail",
-          details: process.env.NEON_DATABASE_URL
-            ? "Database URL configured"
-            : "Database URL missing",
+          status: dbHealth.status === "healthy" ? "pass" : "fail",
+          details:
+            dbHealth.status === "healthy"
+              ? `Database connected successfully${dbHealth.latency ? ` (${dbHealth.latency}ms)` : ""}`
+              : "Database connection failed",
+          latency: dbHealth.latency,
+          timeout: dbInfo.timeout,
         },
         anthropic: {
           status: process.env.ANTHROPIC_API_KEY ? "pass" : "fail",

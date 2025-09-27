@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
-import { describe, expect, it, vi } from "vitest";
+
+// Using vitest globals
 
 // Mock Next.js navigation to prevent router errors
 vi.mock("next/navigation", () => ({

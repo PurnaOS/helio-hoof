@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+// Using vitest globals
 import {
   checkEnvHealth,
   getEnvironmentConfig,

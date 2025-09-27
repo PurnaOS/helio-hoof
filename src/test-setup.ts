@@ -1,7 +1,19 @@
 /// <reference types="vitest/globals" />
 import "@testing-library/jest-dom";
 import React from "react";
-import { vi } from "vitest";
+
+// Ensure globals are properly available
+declare global {
+  var vi: typeof import("vitest").vi;
+  var expect: typeof import("vitest").expect;
+  var describe: typeof import("vitest").describe;
+  var it: typeof import("vitest").it;
+  var test: typeof import("vitest").test;
+  var beforeEach: typeof import("vitest").beforeEach;
+  var afterEach: typeof import("vitest").afterEach;
+  var beforeAll: typeof import("vitest").beforeAll;
+  var afterAll: typeof import("vitest").afterAll;
+}
 
 // Note: Clerk mocking is handled per test file to allow better control over authentication states
 

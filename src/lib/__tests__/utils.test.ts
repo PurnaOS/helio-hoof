@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+// Using vitest globals
 import { cn, convertToBase64, validateImageFile } from "../utils";
 
 describe("Utils", () => {
