@@ -1,18 +1,17 @@
-import { test, expect } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
 test.describe("Protected Routes", () => {
-
   test("should handle API route requests", async ({ page }) => {
     // Test that API routes respond consistently (even if with errors)
     const apiRoutes = [
       "/api/analyze-image",
       "/api/analyze-images",
-      "/api/analysis-history"
+      "/api/analysis-history",
     ];
 
     for (const route of apiRoutes) {
       const response = await page.request.post(route, {
-        data: { test: "data" }
+        data: { test: "data" },
       });
 
       // Should return a valid HTTP status code (not network error)

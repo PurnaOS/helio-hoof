@@ -1,6 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi, beforeEach } from "vitest";
-import React from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock all external dependencies with simple implementations
 vi.mock("@clerk/nextjs", () => ({
@@ -38,12 +37,16 @@ describe("ImageUpload - Basic Tests", () => {
 
   describe("Component Mounting", () => {
     it("should render without crashing", () => {
-      const { container } = render(<ImageUpload onAnalysis={mockOnAnalysis} onError={mockOnError} />);
+      const { container } = render(
+        <ImageUpload onAnalysis={mockOnAnalysis} onError={mockOnError} />,
+      );
       expect(container).toBeInTheDocument();
     });
 
     it("should unmount without errors", () => {
-      const { unmount } = render(<ImageUpload onAnalysis={mockOnAnalysis} onError={mockOnError} />);
+      const { unmount } = render(
+        <ImageUpload onAnalysis={mockOnAnalysis} onError={mockOnError} />,
+      );
 
       expect(screen.getByText(/upload images/i)).toBeInTheDocument();
 
@@ -57,13 +60,17 @@ describe("ImageUpload - Basic Tests", () => {
       render(<ImageUpload onAnalysis={mockOnAnalysis} onError={mockOnError} />);
 
       expect(screen.getByText(/upload images/i)).toBeInTheDocument();
-      expect(screen.getByText(/drag and drop multiple image files/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/drag and drop multiple image files/i),
+      ).toBeInTheDocument();
     });
 
     it("should show file type information", () => {
       render(<ImageUpload onAnalysis={mockOnAnalysis} onError={mockOnError} />);
 
-      expect(screen.getByText(/supports jpeg, png, webp, gif/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/supports jpeg, png, webp, gif/i),
+      ).toBeInTheDocument();
     });
 
     it("should render upload icon", () => {
@@ -79,7 +86,9 @@ describe("ImageUpload - Basic Tests", () => {
     it("should accept onAnalysis callback", () => {
       const customOnAnalysis = vi.fn();
 
-      render(<ImageUpload onAnalysis={customOnAnalysis} onError={mockOnError} />);
+      render(
+        <ImageUpload onAnalysis={customOnAnalysis} onError={mockOnError} />,
+      );
 
       expect(screen.getByText(/upload images/i)).toBeInTheDocument();
       expect(customOnAnalysis).not.toHaveBeenCalled();
@@ -88,7 +97,9 @@ describe("ImageUpload - Basic Tests", () => {
     it("should accept onError callback", () => {
       const customOnError = vi.fn();
 
-      render(<ImageUpload onAnalysis={mockOnAnalysis} onError={customOnError} />);
+      render(
+        <ImageUpload onAnalysis={mockOnAnalysis} onError={customOnError} />,
+      );
 
       expect(screen.getByText(/upload images/i)).toBeInTheDocument();
       expect(customOnError).not.toHaveBeenCalled();
@@ -124,13 +135,17 @@ describe("ImageUpload - Basic Tests", () => {
     });
 
     it("should handle re-renders", () => {
-      const { rerender } = render(<ImageUpload onAnalysis={mockOnAnalysis} onError={mockOnError} />);
+      const { rerender } = render(
+        <ImageUpload onAnalysis={mockOnAnalysis} onError={mockOnError} />,
+      );
 
       expect(screen.getByText(/upload images/i)).toBeInTheDocument();
 
       // Re-render with different props
       const newOnAnalysis = vi.fn();
-      rerender(<ImageUpload onAnalysis={newOnAnalysis} onError={mockOnError} />);
+      rerender(
+        <ImageUpload onAnalysis={newOnAnalysis} onError={mockOnError} />,
+      );
 
       expect(screen.getByText(/upload images/i)).toBeInTheDocument();
     });
@@ -140,7 +155,9 @@ describe("ImageUpload - Basic Tests", () => {
     it("should handle undefined callbacks gracefully", () => {
       // TypeScript would catch this, but testing runtime behavior
       expect(() => {
-        render(<ImageUpload onAnalysis={mockOnAnalysis} onError={mockOnError} />);
+        render(
+          <ImageUpload onAnalysis={mockOnAnalysis} onError={mockOnError} />,
+        );
       }).not.toThrow();
     });
 
@@ -171,19 +188,25 @@ describe("ImageUpload - Basic Tests", () => {
   describe("Component Lifecycle", () => {
     it("should mount and unmount cleanly", () => {
       for (let i = 0; i < 3; i++) {
-        const { unmount } = render(<ImageUpload onAnalysis={mockOnAnalysis} onError={mockOnError} />);
+        const { unmount } = render(
+          <ImageUpload onAnalysis={mockOnAnalysis} onError={mockOnError} />,
+        );
         expect(screen.getByText(/upload images/i)).toBeInTheDocument();
         unmount();
       }
     });
 
     it("should handle rapid prop changes", () => {
-      const { rerender } = render(<ImageUpload onAnalysis={mockOnAnalysis} onError={mockOnError} />);
+      const { rerender } = render(
+        <ImageUpload onAnalysis={mockOnAnalysis} onError={mockOnError} />,
+      );
 
       for (let i = 0; i < 5; i++) {
         const newOnAnalysis = vi.fn();
         const newOnError = vi.fn();
-        rerender(<ImageUpload onAnalysis={newOnAnalysis} onError={newOnError} />);
+        rerender(
+          <ImageUpload onAnalysis={newOnAnalysis} onError={newOnError} />,
+        );
         expect(screen.getByText(/upload images/i)).toBeInTheDocument();
       }
     });

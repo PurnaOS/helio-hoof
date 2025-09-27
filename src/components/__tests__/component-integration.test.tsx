@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
 import { describe, expect, it, vi } from "vitest";
 
@@ -27,7 +27,9 @@ describe("Component Integration", () => {
           <h1>Test Application</h1>
           <div data-testid="counter">
             Count: {count}
-            <button onClick={() => setCount(c => c + 1)}>Increment</button>
+            <button type="button" onClick={() => setCount((c) => c + 1)}>
+              Increment
+            </button>
           </div>
           <div data-testid="message-input">
             <input
@@ -54,7 +56,9 @@ describe("Component Integration", () => {
     // Test input interaction
     const input = screen.getByPlaceholderText("Enter message");
     fireEvent.change(input, { target: { value: "Hello World" } });
-    expect(screen.getByTestId("message-display")).toHaveTextContent("Hello World");
+    expect(screen.getByTestId("message-display")).toHaveTextContent(
+      "Hello World",
+    );
   });
 
   it("should handle conditional rendering based on state", () => {
@@ -64,13 +68,13 @@ describe("Component Integration", () => {
 
       return (
         <div>
-          <button onClick={() => setShowContent(!showContent)}>
+          <button type="button" onClick={() => setShowContent(!showContent)}>
             Toggle Content
           </button>
-          <button onClick={() => setLoading(!loading)}>
+          <button type="button" onClick={() => setLoading(!loading)}>
             Toggle Loading
           </button>
-          
+
           {loading && <div data-testid="loading">Loading...</div>}
           {showContent && !loading && (
             <div data-testid="content">Content is visible</div>
@@ -109,12 +113,13 @@ describe("Component Integration", () => {
       const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         const newErrors: string[] = [];
-        
+
         if (!formData.name.trim()) newErrors.push("Name is required");
-        if (!formData.email.includes('@')) newErrors.push("Valid email is required");
-        
+        if (!formData.email.includes("@"))
+          newErrors.push("Valid email is required");
+
         setErrors(newErrors);
-        
+
         if (newErrors.length === 0) {
           setSubmitted(true);
         }
@@ -130,7 +135,9 @@ describe("Component Integration", () => {
             <input
               data-testid="name-input"
               value={formData.name}
-              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, name: e.target.value }))
+              }
               placeholder="Name"
             />
           </div>
@@ -138,14 +145,16 @@ describe("Component Integration", () => {
             <input
               data-testid="email-input"
               value={formData.email}
-              onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, email: e.target.value }))
+              }
               placeholder="Email"
             />
           </div>
           {errors.length > 0 && (
             <div data-testid="errors">
-              {errors.map((error, index) => (
-                <div key={index}>{error}</div>
+              {errors.map((error) => (
+                <div key={error}>{error}</div>
               ))}
             </div>
           )}
@@ -164,10 +173,10 @@ describe("Component Integration", () => {
 
     // Fix validation errors
     fireEvent.change(screen.getByTestId("name-input"), {
-      target: { value: "John Doe" }
+      target: { value: "John Doe" },
     });
     fireEvent.change(screen.getByTestId("email-input"), {
-      target: { value: "john@example.com" }
+      target: { value: "john@example.com" },
     });
 
     // Submit successfully
@@ -187,12 +196,12 @@ describe("Component Integration", () => {
 
         try {
           // Simulate async operation
-          await new Promise(resolve => setTimeout(resolve, 10));
-          
+          await new Promise((resolve) => setTimeout(resolve, 10));
+
           if (shouldError) {
             throw new Error("Simulated error");
           }
-          
+
           setData("Fetched data");
         } catch (err) {
           setError(err instanceof Error ? err.message : "Unknown error");
@@ -203,9 +212,13 @@ describe("Component Integration", () => {
 
       return (
         <div>
-          <button onClick={() => fetchData(false)}>Fetch Data</button>
-          <button onClick={() => fetchData(true)}>Fetch with Error</button>
-          
+          <button type="button" onClick={() => fetchData(false)}>
+            Fetch Data
+          </button>
+          <button type="button" onClick={() => fetchData(true)}>
+            Fetch with Error
+          </button>
+
           {loading && <div data-testid="loading">Loading...</div>}
           {error && <div data-testid="error">Error: {error}</div>}
           {data && !loading && <div data-testid="data">{data}</div>}
@@ -218,7 +231,7 @@ describe("Component Integration", () => {
     // Test successful fetch
     fireEvent.click(screen.getByText("Fetch Data"));
     expect(screen.getByTestId("loading")).toBeInTheDocument();
-    
+
     await screen.findByTestId("data");
     expect(screen.getByTestId("data")).toHaveTextContent("Fetched data");
     expect(screen.queryByTestId("loading")).not.toBeInTheDocument();
@@ -226,9 +239,11 @@ describe("Component Integration", () => {
     // Test error handling
     fireEvent.click(screen.getByText("Fetch with Error"));
     expect(screen.getByTestId("loading")).toBeInTheDocument();
-    
+
     await screen.findByTestId("error");
-    expect(screen.getByTestId("error")).toHaveTextContent("Error: Simulated error");
+    expect(screen.getByTestId("error")).toHaveTextContent(
+      "Error: Simulated error",
+    );
     expect(screen.queryByTestId("loading")).not.toBeInTheDocument();
   });
 });

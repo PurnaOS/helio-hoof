@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   checkEnvHealth,
-  getEnvVar,
   getEnvironmentConfig,
+  getEnvVar,
   resetEnvCache,
   validateEnv,
   validateEnvSafe,
@@ -56,7 +56,7 @@ describe("Environment Validation", () => {
       });
 
       expect(console.log).toHaveBeenCalledWith(
-        "✅ Environment variables validated successfully"
+        "✅ Environment variables validated successfully",
       );
     });
 
@@ -112,7 +112,7 @@ describe("Environment Validation", () => {
       expect(() => validateEnv()).toThrow("Environment validation failed");
       expect(console.error).toHaveBeenCalledWith(
         expect.stringContaining("❌ Environment validation failed:"),
-        expect.any(String)
+        expect.any(String),
       );
     });
 
@@ -149,7 +149,7 @@ describe("Environment Validation", () => {
       validateEnv();
 
       expect(console.log).not.toHaveBeenCalledWith(
-        "✅ Environment variables validated successfully"
+        "✅ Environment variables validated successfully",
       );
     });
 

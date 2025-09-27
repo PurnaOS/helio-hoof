@@ -64,7 +64,7 @@ vi.mock("next/image", () => ({
       alt,
       width: width || undefined,
       height: height || undefined,
-      ...props
+      ...props,
     });
   },
 }));
@@ -172,31 +172,35 @@ class MockFileReader {
 
   addEventListener() {}
   removeEventListener() {}
-  dispatchEvent() { return true; }
+  dispatchEvent() {
+    return true;
+  }
 }
 
 global.FileReader = MockFileReader as unknown as typeof FileReader;
 
 // Mock fetch with AbortController support
-const mockFetch = vi.fn().mockImplementation(async (url: string, options: RequestInit = {}) => {
-  // Simulate network delay
-  await new Promise(resolve => setTimeout(resolve, 50));
+const mockFetch = vi
+  .fn()
+  .mockImplementation(async (url: string, options: RequestInit = {}) => {
+    // Simulate network delay
+    await new Promise((resolve) => setTimeout(resolve, 50));
 
-  // Check if request was aborted
-  if (options.signal?.aborted) {
-    throw new DOMException("The operation was aborted.", "AbortError");
-  }
+    // Check if request was aborted
+    if (options.signal?.aborted) {
+      throw new DOMException("The operation was aborted.", "AbortError");
+    }
 
-  // Default successful response
-  return {
-    ok: true,
-    status: 200,
-    json: async () => ({ success: true, data: "Test response" }),
-    text: async () => "Test response",
-    headers: new Headers(),
-    url,
-  };
-});
+    // Default successful response
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({ success: true, data: "Test response" }),
+      text: async () => "Test response",
+      headers: new Headers(),
+      url,
+    };
+  });
 
 global.fetch = mockFetch;
 
@@ -257,9 +261,9 @@ console.warn = (...args) => {
   if (
     typeof args[0] === "string" &&
     (args[0].includes("React does not recognize") ||
-     args[0].includes("validateDOMNesting") ||
-     args[0].includes("Warning: ") ||
-     args[0].includes("expected app router"))
+      args[0].includes("validateDOMNesting") ||
+      args[0].includes("Warning: ") ||
+      args[0].includes("expected app router"))
   ) {
     return;
   }
@@ -270,10 +274,10 @@ console.error = (...args) => {
   if (
     typeof args[0] === "string" &&
     (args[0].includes("Warning:") ||
-     args[0].includes("The above error occurred") ||
-     args[0].includes("Parse error:") ||
-     args[0].includes("expected app router") ||
-     args[0].includes("invariant"))
+      args[0].includes("The above error occurred") ||
+      args[0].includes("Parse error:") ||
+      args[0].includes("expected app router") ||
+      args[0].includes("invariant"))
   ) {
     return;
   }

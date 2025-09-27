@@ -1,13 +1,5 @@
-import {
-  render,
-  screen,
-} from "@testing-library/react";
-import React from "react";
-import {
-  describe,
-  expect,
-  it,
-} from "vitest";
+import { render, screen } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
 
 // Test the specific conditional rendering logic without complex mocks
 describe("ImageUpload Component States", () => {
@@ -15,7 +7,7 @@ describe("ImageUpload Component States", () => {
     // Component that simulates the loading state logic from ImageUpload
     const LoadingStateComponent = () => {
       const isLoaded = false;
-      const isSignedIn = false;
+      const _isSignedIn = false;
 
       if (!isLoaded) {
         return (
@@ -23,7 +15,10 @@ describe("ImageUpload Component States", () => {
             <div className="rounded-lg border border-slate-200 bg-white text-slate-950 shadow-sm dark:border-slate-800 dark:bg-slate-950 dark:text-slate-50">
               <div className="p-8">
                 <div className="text-center">
-                  <div className="h-8 w-8 animate-spin mx-auto mb-4" data-testid="loading-spinner" />
+                  <div
+                    className="h-8 w-8 animate-spin mx-auto mb-4"
+                    data-testid="loading-spinner"
+                  />
                   <p className="text-gray-600 dark:text-gray-400">Loading...</p>
                 </div>
               </div>
@@ -65,12 +60,18 @@ describe("ImageUpload Component States", () => {
                   </div>
                   <div className="flex gap-4 justify-center">
                     <a href="/sign-in">
-                      <button type="button" className="border border-gray-300 px-4 py-2 rounded">
+                      <button
+                        type="button"
+                        className="border border-gray-300 px-4 py-2 rounded"
+                      >
                         Sign In
                       </button>
                     </a>
                     <a href="/waitlist">
-                      <button type="button" className="bg-blue-600 text-white px-4 py-2 rounded">
+                      <button
+                        type="button"
+                        className="bg-blue-600 text-white px-4 py-2 rounded"
+                      >
                         Join Waitlist
                       </button>
                     </a>
@@ -87,9 +88,15 @@ describe("ImageUpload Component States", () => {
 
     render(<NotSignedInComponent />);
 
-    expect(screen.getByText(/join our waitlist to start analyzing/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /sign in/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /join waitlist/i })).toBeInTheDocument();
+    expect(
+      screen.getByText(/join our waitlist to start analyzing/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /sign in/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /join waitlist/i }),
+    ).toBeInTheDocument();
   });
 
   it("should render main content when signed in", () => {
@@ -132,6 +139,8 @@ describe("ImageUpload Component States", () => {
 
     expect(screen.getByTestId("image-upload")).toBeInTheDocument();
     expect(screen.getByText("Upload images")).toBeInTheDocument();
-    expect(screen.getByText(/drag and drop multiple image files/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/drag and drop multiple image files/i),
+    ).toBeInTheDocument();
   });
 });

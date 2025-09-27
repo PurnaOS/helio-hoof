@@ -1,7 +1,6 @@
-import { test, expect } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
 test.describe("Authentication Flow", () => {
-
   test("should show main application content", async ({ page }) => {
     // Go to the main page
     await page.goto("/");
@@ -11,7 +10,9 @@ test.describe("Authentication Flow", () => {
 
     // Should see the hero section content
     await expect(page.getByText("Show Jumping Analyzer")).toBeVisible();
-    await expect(page.getByText("Upload single or multiple show jumping images")).toBeVisible();
+    await expect(
+      page.getByText("Upload single or multiple show jumping images"),
+    ).toBeVisible();
   });
 
   test("should allow waitlist signup", async ({ page }) => {
@@ -21,7 +22,9 @@ test.describe("Authentication Flow", () => {
     await expect(page.locator("h1")).toContainText("Join the Waitlist");
 
     // Verify basic waitlist content is present
-    await expect(page.getByText("private beta")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("private beta")).toBeVisible({
+      timeout: 15000,
+    });
 
     // Verify sign-up link is present
     await expect(page.getByText("Already have an invitation?")).toBeVisible();
@@ -38,7 +41,9 @@ test.describe("Authentication Flow", () => {
     // For now, we just verify the link exists
   });
 
-  test("should show proper error handling for auth failures", async ({ page }) => {
+  test("should show proper error handling for auth failures", async ({
+    page,
+  }) => {
     await page.goto("/");
 
     // Verify that auth errors are handled gracefully

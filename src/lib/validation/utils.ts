@@ -106,9 +106,9 @@ export function validateRequest<T>(schema: ZodSchema<T>) {
       return { data: validatedData };
     } catch (error) {
       if (error instanceof ZodError) {
-        const details = error.errors.map(
-          (err) => `${err.path.join(".")}: ${err.message}`,
-        );
+        const details =
+          error.errors?.map((err) => `${err.path.join(".")}: ${err.message}`) ||
+          [];
         return {
           error: createErrorResponse(
             "Validation failed",
@@ -141,9 +141,9 @@ export function validateQuery<T>(
     return { data: validatedData };
   } catch (error) {
     if (error instanceof ZodError) {
-      const details = error.errors.map(
-        (err) => `${err.path.join(".")}: ${err.message}`,
-      );
+      const details =
+        error.errors?.map((err) => `${err.path.join(".")}: ${err.message}`) ||
+        [];
       return {
         error: createErrorResponse(
           "Query parameter validation failed",
@@ -167,12 +167,12 @@ export function validateQuery<T>(
 // Sanitization utilities
 export function sanitizeString(input: string): string {
   return input
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "") // Remove script tags
-    .replace(/<[^>]*>/g, "") // Remove all HTML tags
+    .replace(/<script\b[^>]*>.*?<\/script>/gi, "") // Remove script tags completely (security)
     .replace(/javascript:/gi, "") // Remove javascript: protocol
     .replace(/on\w+\s*=/gi, "") // Remove event handlers
+    .replace(/<\s*\/?\s*[a-zA-Z][a-zA-Z0-9]*\s*[^<>]*>/g, "") // Remove HTML tags but keep content
     .replace(/[<>'"&]/g, (char) => {
-      // Escape remaining dangerous characters
+      // Then escape any remaining dangerous characters
       const escapeMap: Record<string, string> = {
         "<": "&lt;",
         ">": "&gt;",
@@ -185,25 +185,51 @@ export function sanitizeString(input: string): string {
     .trim();
 }
 
-export function sanitizeObject<T extends Record<string, unknown>>(obj: T): T {
+export function sanitizeObject<T extends Record<string, unknown>>(
+  obj: T,
+  visited = new WeakSet(),
+): T {
+  // Handle null and undefined
+  if (obj === null || obj === undefined) {
+    return obj;
+  }
+
+  // Prevent circular references
+  if (visited.has(obj)) {
+    return {} as T;
+  }
+  visited.add(obj);
+
   const sanitized = { ...obj };
 
   for (const [key, value] of Object.entries(sanitized)) {
-    if (typeof value === "string") {
+    if (value === null || value === undefined) {
+      // Keep null and undefined values as-is
+    } else if (typeof value === "string") {
       sanitized[key] = sanitizeString(value);
-    } else if (
-      typeof value === "object" &&
-      value !== null &&
-      !Array.isArray(value)
-    ) {
-      sanitized[key] = sanitizeObject(value as Record<string, unknown>);
+    } else if (value instanceof Date || value instanceof RegExp) {
+      // Preserve Date and RegExp objects
+      sanitized[key] = value;
     } else if (Array.isArray(value)) {
       sanitized[key] = value.map((item) =>
         typeof item === "string"
           ? sanitizeString(item)
-          : typeof item === "object" && item !== null
-            ? sanitizeObject(item as Record<string, unknown>)
+          : typeof item === "object" &&
+              item !== null &&
+              !(item instanceof Date) &&
+              !(item instanceof RegExp)
+            ? sanitizeObject(item as Record<string, unknown>, visited)
             : item,
+      );
+    } else if (
+      typeof value === "object" &&
+      value !== null &&
+      !(value instanceof Date) &&
+      !(value instanceof RegExp)
+    ) {
+      sanitized[key] = sanitizeObject(
+        value as Record<string, unknown>,
+        visited,
       );
     }
   }
@@ -246,6 +272,10 @@ export function validateImageType(mimeType: string): boolean {
 
 // Rate limiting utilities
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+
+// Export for testing purposes only
+export const getRateLimitMapForTesting = () => rateLimitMap;
+export const clearRateLimitMapForTesting = () => rateLimitMap.clear();
 
 export function checkRateLimit(
   identifier: string,

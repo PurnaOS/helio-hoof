@@ -114,9 +114,15 @@ describe("Validation Index Exports", () => {
       const utilsModule = await import("./index");
 
       expect(utilsModule.ApiErrorCode).toBeDefined();
-      expect(utilsModule.ApiErrorCode.VALIDATION_ERROR).toBe("VALIDATION_ERROR");
-      expect(utilsModule.ApiErrorCode.AUTHENTICATION_ERROR).toBe("AUTHENTICATION_ERROR");
-      expect(utilsModule.ApiErrorCode.RATE_LIMIT_EXCEEDED).toBe("RATE_LIMIT_EXCEEDED");
+      expect(utilsModule.ApiErrorCode.VALIDATION_ERROR).toBe(
+        "VALIDATION_ERROR",
+      );
+      expect(utilsModule.ApiErrorCode.AUTHENTICATION_ERROR).toBe(
+        "AUTHENTICATION_ERROR",
+      );
+      expect(utilsModule.ApiErrorCode.RATE_LIMIT_EXCEEDED).toBe(
+        "RATE_LIMIT_EXCEEDED",
+      );
     });
   });
 
@@ -150,7 +156,9 @@ describe("Validation Index Exports", () => {
       const validUuid = "550e8400-e29b-41d4-a716-446655440000";
       expect(() => uuidSchema.parse(validUuid)).not.toThrow();
 
-      const sanitizedString = sanitizeStringSchema.parse("Hello <script>test</script>");
+      const sanitizedString = sanitizeStringSchema.parse(
+        "Hello <script>test</script>",
+      );
       expect(sanitizedString).toBe("Hello");
     });
 
@@ -237,6 +245,8 @@ describe("Validation Index Exports", () => {
         "validateImageType",
         "checkRateLimit",
         "cleanupRateLimitMap",
+        "getRateLimitMapForTesting",
+        "clearRateLimitMapForTesting",
         "setCorsHeaders",
         "setSecurityHeaders",
         "logApiError",
@@ -308,7 +318,9 @@ describe("Validation Index Exports", () => {
 
       // Test that ApiErrorCode is an object with string values
       expect(typeof validationModule.ApiErrorCode).toBe("object");
-      expect(typeof validationModule.ApiErrorCode.VALIDATION_ERROR).toBe("string");
+      expect(typeof validationModule.ApiErrorCode.VALIDATION_ERROR).toBe(
+        "string",
+      );
     });
   });
 
@@ -322,7 +334,9 @@ describe("Validation Index Exports", () => {
       expect(indexModule.checkEnvHealth).toBe(envModule.checkEnvHealth);
       expect(indexModule.resetEnvCache).toBe(envModule.resetEnvCache);
       expect(indexModule.validateEnvSafe).toBe(envModule.validateEnvSafe);
-      expect(indexModule.getEnvironmentConfig).toBe(envModule.getEnvironmentConfig);
+      expect(indexModule.getEnvironmentConfig).toBe(
+        envModule.getEnvironmentConfig,
+      );
     });
 
     it("should re-export schemas from schemas module correctly", async () => {
@@ -330,8 +344,12 @@ describe("Validation Index Exports", () => {
       const schemasModule = await import("./schemas");
 
       expect(indexModule.envSchema).toBe(schemasModule.envSchema);
-      expect(indexModule.singleImageSchema).toBe(schemasModule.singleImageSchema);
-      expect(indexModule.multipleImagesSchema).toBe(schemasModule.multipleImagesSchema);
+      expect(indexModule.singleImageSchema).toBe(
+        schemasModule.singleImageSchema,
+      );
+      expect(indexModule.multipleImagesSchema).toBe(
+        schemasModule.multipleImagesSchema,
+      );
       expect(indexModule.uuidSchema).toBe(schemasModule.uuidSchema);
     });
 
@@ -339,8 +357,12 @@ describe("Validation Index Exports", () => {
       const indexModule = await import("./index");
       const utilsModule = await import("./utils");
 
-      expect(indexModule.createErrorResponse).toBe(utilsModule.createErrorResponse);
-      expect(indexModule.createSuccessResponse).toBe(utilsModule.createSuccessResponse);
+      expect(indexModule.createErrorResponse).toBe(
+        utilsModule.createErrorResponse,
+      );
+      expect(indexModule.createSuccessResponse).toBe(
+        utilsModule.createSuccessResponse,
+      );
       expect(indexModule.validateRequest).toBe(utilsModule.validateRequest);
       expect(indexModule.sanitizeString).toBe(utilsModule.sanitizeString);
       expect(indexModule.ApiErrorCode).toBe(utilsModule.ApiErrorCode);

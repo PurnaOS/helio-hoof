@@ -1,6 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi, beforeEach } from "vitest";
-import React from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Simple mock data
 const mockUploadedImages = [
@@ -81,7 +80,9 @@ describe("MultiImageAnalysis - Ultra Simple Tests", () => {
     it("should unmount cleanly", () => {
       const { unmount } = renderComponent();
 
-      expect(screen.getByText(/multi-image analysis results/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/multi-image analysis results/i),
+      ).toBeInTheDocument();
 
       unmount();
     });
@@ -91,7 +92,9 @@ describe("MultiImageAnalysis - Ultra Simple Tests", () => {
     it("should display main heading", () => {
       renderComponent();
 
-      expect(screen.getByText(/multi-image analysis results/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/multi-image analysis results/i),
+      ).toBeInTheDocument();
     });
 
     it("should show analysis content", () => {
@@ -163,7 +166,9 @@ describe("MultiImageAnalysis - Ultra Simple Tests", () => {
         />,
       );
 
-      expect(screen.getByText(/multi-image analysis results/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/multi-image analysis results/i),
+      ).toBeInTheDocument();
       expect(customOnReset).not.toHaveBeenCalled();
     });
 
@@ -183,7 +188,9 @@ describe("MultiImageAnalysis - Ultra Simple Tests", () => {
 
   describe("Error Handling", () => {
     it("should handle invalid JSON", () => {
-      const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      const consoleSpy = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
 
       renderComponent("{ invalid json }");
 
@@ -199,9 +206,11 @@ describe("MultiImageAnalysis - Ultra Simple Tests", () => {
     });
 
     it("should handle null analysis", () => {
-      const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      const consoleSpy = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
 
-      renderComponent(null as any);
+      renderComponent(null);
 
       expect(screen.getByText(/analysis error/i)).toBeInTheDocument();
 
@@ -213,7 +222,11 @@ describe("MultiImageAnalysis - Ultra Simple Tests", () => {
     it("should have proper layout", () => {
       const { container } = renderComponent();
 
-      expect(container.firstChild).toHaveClass("w-full", "max-w-7xl", "mx-auto");
+      expect(container.firstChild).toHaveClass(
+        "w-full",
+        "max-w-7xl",
+        "mx-auto",
+      );
     });
 
     it("should render analysis sections", () => {
@@ -228,7 +241,9 @@ describe("MultiImageAnalysis - Ultra Simple Tests", () => {
     it("should handle rapid mount/unmount", () => {
       for (let i = 0; i < 3; i++) {
         const { unmount } = renderComponent();
-        expect(screen.getByText(/multi-image analysis results/i)).toBeInTheDocument();
+        expect(
+          screen.getByText(/multi-image analysis results/i),
+        ).toBeInTheDocument();
         unmount();
       }
     });
@@ -293,7 +308,9 @@ describe("MultiImageAnalysis - Ultra Simple Tests", () => {
 
       renderComponent(nonShowJumpingAnalysis);
 
-      expect(screen.getByText(/do not show show jumping content/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/do not show show jumping content/i),
+      ).toBeInTheDocument();
     });
 
     it("should handle completely invalid images", () => {
@@ -306,7 +323,9 @@ describe("MultiImageAnalysis - Ultra Simple Tests", () => {
       renderComponent(invalidImagesAnalysis);
 
       expect(
-        screen.getByText(/none of the uploaded images contain show jumping content/i),
+        screen.getByText(
+          /none of the uploaded images contain show jumping content/i,
+        ),
       ).toBeInTheDocument();
     });
   });

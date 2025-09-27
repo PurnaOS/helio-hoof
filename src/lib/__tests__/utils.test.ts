@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { cn, convertToBase64, validateImageFile } from "../utils";
 
 describe("Utils", () => {
@@ -67,13 +67,17 @@ describe("Utils", () => {
       const file = new File(["test"], "test.txt", { type: "text/plain" });
       const result = validateImageFile(file);
       expect(result.isValid).toBe(false);
-      expect(result.error).toBe("Please upload a valid image file (JPEG, PNG, WebP, or GIF)");
+      expect(result.error).toBe(
+        "Please upload a valid image file (JPEG, PNG, WebP, or GIF)",
+      );
     });
 
     it("should reject files that are too large", () => {
       // Create a file larger than 10MB
       const largeContent = new Array(11 * 1024 * 1024).fill("x").join("");
-      const file = new File([largeContent], "large.jpg", { type: "image/jpeg" });
+      const file = new File([largeContent], "large.jpg", {
+        type: "image/jpeg",
+      });
       const result = validateImageFile(file);
       expect(result.isValid).toBe(false);
       expect(result.error).toBe("Image size must be less than 10MB");
@@ -89,16 +93,22 @@ describe("Utils", () => {
     });
 
     it("should handle edge case file types", () => {
-      const svgFile = new File(["<svg></svg>"], "test.svg", { type: "image/svg+xml" });
+      const svgFile = new File(["<svg></svg>"], "test.svg", {
+        type: "image/svg+xml",
+      });
       const result = validateImageFile(svgFile);
       expect(result.isValid).toBe(false);
-      expect(result.error).toBe("Please upload a valid image file (JPEG, PNG, WebP, or GIF)");
+      expect(result.error).toBe(
+        "Please upload a valid image file (JPEG, PNG, WebP, or GIF)",
+      );
     });
   });
 
   describe("convertToBase64", () => {
     it("should convert a file to base64", async () => {
-      const file = new File(["test content"], "test.txt", { type: "text/plain" });
+      const file = new File(["test content"], "test.txt", {
+        type: "text/plain",
+      });
       const result = await convertToBase64(file);
 
       // The result should be a base64 string
@@ -110,7 +120,9 @@ describe("Utils", () => {
     });
 
     it("should handle different file types", async () => {
-      const imageFile = new File(["fake image data"], "test.png", { type: "image/png" });
+      const imageFile = new File(["fake image data"], "test.png", {
+        type: "image/png",
+      });
       const result = await convertToBase64(imageFile);
 
       expect(typeof result).toBe("string");
@@ -153,7 +165,9 @@ describe("Utils", () => {
     });
 
     it("should handle files with special characters in name", async () => {
-      const file = new File(["test"], "test file with spaces & symbols!.txt", { type: "text/plain" });
+      const file = new File(["test"], "test file with spaces & symbols!.txt", {
+        type: "text/plain",
+      });
       const result = await convertToBase64(file);
 
       expect(typeof result).toBe("string");
@@ -161,7 +175,9 @@ describe("Utils", () => {
     });
 
     it("should extract base64 from data URL correctly", async () => {
-      const file = new File(["test content"], "test.txt", { type: "text/plain" });
+      const file = new File(["test content"], "test.txt", {
+        type: "text/plain",
+      });
 
       // Mock FileReader to return a specific data URL
       const OriginalFileReader = global.FileReader;

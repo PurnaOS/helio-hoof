@@ -1,7 +1,6 @@
-import { test, expect } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
 test.describe("Application Functionality", () => {
-
   test("should load main page without errors", async ({ page }) => {
     await page.goto("/");
 
@@ -16,11 +15,14 @@ test.describe("Application Functionality", () => {
     await expect(page.locator("body")).toBeVisible();
 
     // Verify no critical JavaScript errors occurred
-    expect(errors.filter(error =>
-      error.includes("TypeError") ||
-      error.includes("ReferenceError") ||
-      error.includes("SyntaxError")
-    )).toHaveLength(0);
+    expect(
+      errors.filter(
+        (error) =>
+          error.includes("TypeError") ||
+          error.includes("ReferenceError") ||
+          error.includes("SyntaxError"),
+      ),
+    ).toHaveLength(0);
   });
 
   test("should display proper app branding", async ({ page }) => {
@@ -82,8 +84,9 @@ test.describe("Application Functionality", () => {
     const rootStyles = await page.evaluate(() => {
       const computedStyles = getComputedStyle(document.documentElement);
       return {
-        hasBackground: computedStyles.getPropertyValue("background-color") !== "",
-        hasTextColor: computedStyles.getPropertyValue("color") !== ""
+        hasBackground:
+          computedStyles.getPropertyValue("background-color") !== "",
+        hasTextColor: computedStyles.getPropertyValue("color") !== "",
       };
     });
 

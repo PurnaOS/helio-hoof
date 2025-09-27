@@ -80,7 +80,7 @@ describe("ImageUploadErrorBoundary", () => {
       return <div>No error</div>;
     };
 
-    const { rerender } = render(
+    render(
       <ImageUploadErrorBoundary>
         <ToggleErrorComponent />
       </ImageUploadErrorBoundary>,

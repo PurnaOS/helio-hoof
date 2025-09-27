@@ -1,10 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import {
   ApiErrorCode,
   checkRateLimit,
   cleanupRateLimitMap,
+  clearRateLimitMapForTesting,
   createErrorResponse,
   createSuccessResponse,
   getImageSizeFromBase64,
@@ -45,7 +46,7 @@ describe("Validation Utils", () => {
         "Test error",
         400,
         ApiErrorCode.VALIDATION_ERROR,
-        ["Detail 1", "Detail 2"]
+        ["Detail 1", "Detail 2"],
       );
 
       expect(response).toBeInstanceOf(NextResponse);
@@ -333,8 +334,8 @@ describe("Validation Utils", () => {
 
       const result = sanitizeObject(obj);
 
-      expect(result.tags).toEqual(["tag1", "tag2", "normal tag"]);
-      expect(result.nested[0].name).toBe("nested");
+      expect(result.tags).toEqual(["", "tag2", "normal tag"]); // script tags are completely removed for security
+      expect(result.nested[0].name).toBe(""); // script content is completely removed
     });
 
     it("should handle null and undefined values", () => {
@@ -348,7 +349,7 @@ describe("Validation Utils", () => {
 
       expect(result.nullValue).toBeNull();
       expect(result.undefinedValue).toBeUndefined();
-      expect(result.name).toBe("test");
+      expect(result.name).toBe(""); // script tags are completely removed for security
     });
 
     it("should preserve non-string, non-object values", () => {
@@ -469,7 +470,7 @@ describe("Validation Utils", () => {
   describe("checkRateLimit", () => {
     beforeEach(() => {
       // Clear the rate limit map between tests
-      cleanupRateLimitMap();
+      clearRateLimitMapForTesting();
     });
 
     it("should allow requests within limit", () => {
@@ -530,6 +531,11 @@ describe("Validation Utils", () => {
   });
 
   describe("cleanupRateLimitMap", () => {
+    beforeEach(() => {
+      // Clear the rate limit map for cleanup tests too
+      clearRateLimitMapForTesting();
+    });
+
     it("should remove expired entries", () => {
       let currentTime = 1000000;
       vi.spyOn(Date, "now").mockImplementation(() => currentTime);
@@ -558,16 +564,24 @@ describe("Validation Utils", () => {
       const response = new NextResponse();
       const result = setCorsHeaders(response, "https://app.example.com");
 
-      expect(result.headers.get("Access-Control-Allow-Origin")).toBe("https://app.example.com");
-      expect(result.headers.get("Access-Control-Allow-Methods")).toBe("GET, POST, PUT, DELETE, OPTIONS");
-      expect(result.headers.get("Access-Control-Allow-Credentials")).toBe("true");
+      expect(result.headers.get("Access-Control-Allow-Origin")).toBe(
+        "https://app.example.com",
+      );
+      expect(result.headers.get("Access-Control-Allow-Methods")).toBe(
+        "GET, POST, PUT, DELETE, OPTIONS",
+      );
+      expect(result.headers.get("Access-Control-Allow-Credentials")).toBe(
+        "true",
+      );
     });
 
     it("should handle localhost origins", () => {
       const response = new NextResponse();
       const result = setCorsHeaders(response, "http://localhost:3000");
 
-      expect(result.headers.get("Access-Control-Allow-Origin")).toBe("http://localhost:3000");
+      expect(result.headers.get("Access-Control-Allow-Origin")).toBe(
+        "http://localhost:3000",
+      );
     });
 
     it("should handle missing origin", () => {
@@ -583,7 +597,9 @@ describe("Validation Utils", () => {
       const response = new NextResponse();
       const result = setCorsHeaders(response, "https://my-app.vercel.app");
 
-      expect(result.headers.get("Access-Control-Allow-Origin")).toBe("https://my-app.vercel.app");
+      expect(result.headers.get("Access-Control-Allow-Origin")).toBe(
+        "https://my-app.vercel.app",
+      );
     });
 
     it("should reject disallowed origins", () => {
@@ -602,9 +618,15 @@ describe("Validation Utils", () => {
       expect(result.headers.get("X-Content-Type-Options")).toBe("nosniff");
       expect(result.headers.get("X-Frame-Options")).toBe("DENY");
       expect(result.headers.get("X-XSS-Protection")).toBe("1; mode=block");
-      expect(result.headers.get("Referrer-Policy")).toBe("strict-origin-when-cross-origin");
-      expect(result.headers.get("Permissions-Policy")).toBe("camera=(), microphone=(), geolocation=()");
-      expect(result.headers.get("Content-Security-Policy")).toBe("default-src 'none'; frame-ancestors 'none';");
+      expect(result.headers.get("Referrer-Policy")).toBe(
+        "strict-origin-when-cross-origin",
+      );
+      expect(result.headers.get("Permissions-Policy")).toBe(
+        "camera=(), microphone=(), geolocation=()",
+      );
+      expect(result.headers.get("Content-Security-Policy")).toBe(
+        "default-src 'none'; frame-ancestors 'none';",
+      );
     });
 
     it("should return the same response object", () => {
@@ -632,7 +654,7 @@ describe("Validation Utils", () => {
             message: "Test error",
             stack: "Error stack trace",
           },
-        })
+        }),
       );
     });
 
@@ -646,7 +668,7 @@ describe("Validation Utils", () => {
         expect.objectContaining({
           context: "test-context",
           error: "String error",
-        })
+        }),
       );
     });
 
@@ -660,7 +682,7 @@ describe("Validation Utils", () => {
         "[API Error] context:",
         expect.objectContaining({
           timestamp: "2023-01-01T12:00:00.000Z",
-        })
+        }),
       );
 
       vi.useRealTimers();
@@ -713,13 +735,13 @@ describe("Validation Utils", () => {
 
       const result = sanitizeObject(largeObj);
       expect(Object.keys(result)).toHaveLength(1000);
-      expect(result.key0).toBe("value0");
+      expect(result.key0).toBe(""); // script tags are completely removed
     });
 
     it("should handle Unicode in sanitization", () => {
       const unicode = "Hello 世界 🌍 <script>alert('xss')</script>";
       const result = sanitizeString(unicode);
-      expect(result).toBe("Hello 世界 🌍 ");
+      expect(result).toBe("Hello 世界 🌍"); // script tag completely removed
     });
 
     it("should handle very long base64 strings", () => {

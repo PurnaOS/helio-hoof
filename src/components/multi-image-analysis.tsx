@@ -216,7 +216,10 @@ export function MultiImageAnalysis({
               jsonStr = codeBlockMatch[1];
               parsed = JSON.parse(jsonStr);
             } catch (parseError) {
-              console.log("Strategy 3 failed to parse matched JSON:", parseError);
+              console.log(
+                "Strategy 3 failed to parse matched JSON:",
+                parseError,
+              );
               // All strategies failed, will be handled by outer error handling
             }
           }
@@ -291,7 +294,7 @@ export function MultiImageAnalysis({
   React.useEffect(() => {
     return () => {
       uploadedImages.forEach((image) => {
-        if (image.previewUrl.startsWith('blob:')) {
+        if (image.previewUrl.startsWith("blob:")) {
           URL.revokeObjectURL(image.previewUrl);
         }
       });
