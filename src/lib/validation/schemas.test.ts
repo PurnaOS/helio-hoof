@@ -300,7 +300,7 @@ describe("Validation Schemas", () => {
 
   describe("createAnalysisHistorySchema", () => {
     it("should validate complete analysis history", () => {
-      const validHistory = {
+      const _validHistory = {
         analysisType: "single" as const,
         analysisResult: "Analysis complete",
         images: [
@@ -325,7 +325,7 @@ describe("Validation Schemas", () => {
         const testData = {
           analysisType: "single",
           analysisResult: "test",
-          images: []
+          images: [],
         };
         // This will fail validation but shouldn't crash with undefined errors
         try {
