@@ -8,20 +8,39 @@ dotenv.config({ path: ".env.local" });
 
 export default defineConfig({
   testDir: "./tests",
-  fullyParallel: true,
+  fullyParallel: false, // Disable for auth tests to avoid conflicts
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-  reporter: "html",
+  reporter: [["html"], ["list"]],
+  timeout: 30000,
+  expect: {
+    timeout: 10000,
+  },
   use: {
     baseURL: "http://localhost:3000",
     trace: "on-first-retry",
     screenshot: "only-on-failure",
+    actionTimeout: 10000,
+    navigationTimeout: 30000,
+    // Ignore HTTPS errors in development
+    ignoreHTTPSErrors: true,
   },
 
   projects: [
     {
-      name: "chromium",
+      name: "auth-flow",
+      testMatch: "**/auth-flow.spec.ts",
+      use: { ...devices["Desktop Chrome"] },
+    },
+    {
+      name: "protected-routes",
+      testMatch: "**/protected-routes.spec.ts",
+      use: { ...devices["Desktop Chrome"] },
+    },
+    {
+      name: "app-functionality",
+      testMatch: "**/app-functionality.spec.ts",
       use: { ...devices["Desktop Chrome"] },
     },
   ],
@@ -30,5 +49,8 @@ export default defineConfig({
     command: "bun run dev",
     url: "http://localhost:3000",
     reuseExistingServer: !process.env.CI,
+    timeout: 120000,
+    stdout: "ignore",
+    stderr: "pipe",
   },
 });
